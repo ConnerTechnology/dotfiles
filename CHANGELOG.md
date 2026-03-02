@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.10.1] - 2026-03-02
+
+### Removed
+- Dock auto-hide delay and animation speed overrides from macOS defaults (restores default macOS hide/show animation)
+
 ## [7.10.0] - 2026-03-01
 
 ### Added
