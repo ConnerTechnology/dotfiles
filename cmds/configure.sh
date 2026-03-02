@@ -232,8 +232,6 @@ macos_show() {
 
     echo "Dock:"
     show_default "com.apple.dock" "autohide" "Auto-hide" bool
-    show_default "com.apple.dock" "autohide-delay" "Auto-hide delay" float_seconds
-    show_default "com.apple.dock" "autohide-time-modifier" "Auto-hide animation" float_seconds
     show_default "com.apple.dock" "launchanim" "Launch animation" bool
     show_default "com.apple.dock" "show-recents" "Show recent apps" bool
     echo ""
@@ -293,8 +291,6 @@ macos_apply() {
     # Dock Settings
     log_info "Configuring Dock..."
     defaults write com.apple.dock autohide -bool true
-    defaults write com.apple.dock autohide-delay -float 0
-    defaults write com.apple.dock autohide-time-modifier -float 0
     defaults write com.apple.dock launchanim -bool false
     defaults write com.apple.dock show-recents -bool false
 
@@ -355,8 +351,6 @@ macos_reset() {
 
     log_info "Resetting Dock settings..."
     defaults delete com.apple.dock autohide 2>/dev/null || true
-    defaults delete com.apple.dock autohide-delay 2>/dev/null || true
-    defaults delete com.apple.dock autohide-time-modifier 2>/dev/null || true
     defaults delete com.apple.dock launchanim 2>/dev/null || true
     defaults delete com.apple.dock show-recents 2>/dev/null || true
 
