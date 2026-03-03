@@ -194,8 +194,8 @@ fi
 # Main logic
 IFS='|' read -r current_name current_email <<< "$(get_current_git_user "$SCOPE")"
 
-# Skip if already configured and --skip was passed
-if [[ "$SKIP_IF_CONFIGURED" == "true" && -n "$current_name" && -n "$current_email" ]]; then
+# Skip if already configured and --skip was passed (only when no explicit args given)
+if [[ "$SKIP_IF_CONFIGURED" == "true" && -z "$GIT_USER_NAME" && -z "$GIT_USER_EMAIL" && -n "$current_name" && -n "$current_email" ]]; then
     log_info "Git user already configured ($SCOPE): $current_name <$current_email>"
     exit 0
 fi
