@@ -567,6 +567,24 @@ linux_mint_show() {
     show_dconf "/org/nemo/preferences/default-folder-viewer" "Default view"
     echo ""
 
+    echo "Swap:"
+    local swap_total
+    swap_total=$(swapon --show --noheadings --bytes 2>/dev/null | awk '{sum+=$3} END {if(sum>0) printf "%.1f GB", sum/1073741824; else print "none"}')
+    printf "  %-40s %s\n" "Total swap:" "$swap_total"
+    if [[ -f /swapfile ]]; then
+        local swapfile_size
+        swapfile_size=$(stat -c%s /swapfile 2>/dev/null | awk '{printf "%.0f GB", $1/1073741824}')
+        printf "  %-40s %s\n" "Swap file (/swapfile):" "$swapfile_size"
+    else
+        printf "  %-40s %s\n" "Swap file (/swapfile):" "not configured"
+    fi
+    if grep -q '/swapfile' /etc/fstab 2>/dev/null; then
+        printf "  %-40s %s\n" "Swap file in fstab:" "yes"
+    else
+        printf "  %-40s %s\n" "Swap file in fstab:" "no"
+    fi
+    echo ""
+
     if lsmod | grep -q "^nvidia "; then
         echo "NVIDIA Suspend:"
         local cmdline
@@ -595,6 +613,7 @@ linux_mint_apply() {
         log_info "[DRY-RUN] Would configure Mouse settings (acceleration, speed, natural scroll)"
         log_info "[DRY-RUN] Would configure Sound settings (disable event sounds)"
         log_info "[DRY-RUN] Would configure Nemo settings (list view)"
+        log_info "[DRY-RUN] Would create 8GB swap file at /swapfile"
         if lsmod | grep -q "^nvidia "; then
             log_info "[DRY-RUN] Would configure NVIDIA suspend (GRUB parameter, systemd services)"
         fi
@@ -636,6 +655,25 @@ linux_mint_apply() {
     log_info "Configuring Nemo..."
     dconf write /org/nemo/preferences/default-folder-viewer "'list-view'"
 
+    # Swap file - add a 8GB swap file for extra headroom
+    log_info "Configuring swap..."
+    if [[ ! -f /swapfile ]]; then
+        log_info "Creating 8GB swap file..."
+        maybe_sudo fallocate -l 8G /swapfile
+        maybe_sudo chmod 600 /swapfile
+        maybe_sudo mkswap /swapfile
+        maybe_sudo swapon /swapfile
+        if ! grep -q '/swapfile' /etc/fstab; then
+            echo '/swapfile none swap sw 0 0' | maybe_sudo tee -a /etc/fstab >/dev/null
+        fi
+        log_success "8GB swap file created and activated"
+    else
+        log_info "Swap file already exists"
+        if ! swapon --show | grep -q '/swapfile'; then
+            maybe_sudo swapon /swapfile
+        fi
+    fi
+
     # NVIDIA Suspend Stability (only if NVIDIA driver is loaded)
     if lsmod | grep -q "^nvidia "; then
         log_info "Configuring NVIDIA suspend stability..."
@@ -675,7 +713,7 @@ linux_mint_reset() {
     log_step "Resetting Linux Mint System Defaults"
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "[DRY-RUN] Would reset Power, Screensaver, Keyboard, Mouse, Sound, Nemo settings"
+        log_info "[DRY-RUN] Would reset Power, Screensaver, Keyboard, Mouse, Sound, Nemo, Swap settings"
         if lsmod | grep -q "^nvidia "; then
             log_info "[DRY-RUN] Would reset NVIDIA suspend settings (GRUB parameter, systemd services)"
         fi
@@ -710,6 +748,17 @@ linux_mint_reset() {
 
     log_info "Resetting Nemo settings..."
     dconf reset /org/nemo/preferences/default-folder-viewer
+
+    log_info "Resetting Swap settings..."
+    if swapon --show | grep -q '/swapfile'; then
+        maybe_sudo swapoff /swapfile || true
+    fi
+    if [[ -f /swapfile ]]; then
+        maybe_sudo rm /swapfile
+    fi
+    if grep -q '/swapfile' /etc/fstab 2>/dev/null; then
+        maybe_sudo sed -i '\|/swapfile|d' /etc/fstab
+    fi
 
     if lsmod | grep -q "^nvidia "; then
         log_info "Resetting NVIDIA suspend settings..."

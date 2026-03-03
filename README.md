@@ -7,13 +7,13 @@ Modular dotfiles for macOS and Linux. Managed via the `ctdev` CLI.
 **One-liner:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/thomasconner/dotfiles/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ConnerTechnology/dotfiles/main/install.sh | bash
 ```
 
 **Or manually:**
 
 ```bash
-git clone https://github.com/thomasconner/dotfiles.git ~/dotfiles
+git clone https://github.com/ConnerTechnology/dotfiles.git ~/dotfiles
 ~/dotfiles/install.sh
 ```
 
@@ -36,13 +36,13 @@ ctdev configure linux-mint      # Configure Linux Mint defaults
 
 ## Components
 
-34 components available. Run `ctdev list` to see all with status.
+35 components available. Run `ctdev list` to see all with status.
 
 **Desktop Applications:**
 1password, chatgpt, chrome, cleanmymac, claude-desktop, dbeaver, ghostty, linear, logi-options, slack, tradingview, vscode
 
 **CLI Tools:**
-age, bleachbit, btop, bun, claude-code, codex, docker, doctl, gh, git-spice, helm, jq, kubectl, shellcheck, sops, terraform, tmux
+age, bleachbit, btop, bun, claude-code, codex, docker, doctl, earlyoom, gh, git-spice, helm, jq, kubectl, shellcheck, sops, terraform, tmux
 
 **Configuration & Languages:**
 fonts, git, node, ruby, zsh
@@ -72,7 +72,7 @@ Add to your VS Code `settings.json`:
 
 ```json
 {
-  "dotfiles.repository": "https://github.com/thomasconner/dotfiles.git",
+  "dotfiles.repository": "https://github.com/ConnerTechnology/dotfiles.git",
   "dotfiles.targetPath": "~/dotfiles",
   "dotfiles.installCommand": "./devcontainer.sh"
 }

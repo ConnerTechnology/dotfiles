@@ -24,6 +24,7 @@ declare -a COMPONENTS=(
     "dbeaver:DBeaver database tool:components/dbeaver/install.sh"
     "docker:Docker container runtime:components/docker/install.sh"
     "doctl:DigitalOcean CLI:components/doctl/install.sh"
+    "earlyoom:Early OOM killer for Linux:components/earlyoom/install.sh"
     "fonts:Nerd Fonts for terminal:components/fonts/install.sh"
     "gh:GitHub CLI:components/gh/install.sh"
     "ghostty:Ghostty terminal emulator:components/ghostty/install.sh"
@@ -196,6 +197,9 @@ is_component_installed() {
         doctl)
             command -v doctl >/dev/null 2>&1
             ;;
+        earlyoom)
+            command -v earlyoom >/dev/null 2>&1
+            ;;
         gh)
             command -v gh >/dev/null 2>&1
             ;;
@@ -310,7 +314,7 @@ is_component_supported() {
             [[ "$os" == "Darwin" ]]
             ;;
         # Linux only
-        bleachbit)
+        bleachbit|earlyoom)
             [[ "$os" == "Linux" ]]
             ;;
         # macOS only (no Linux desktop app)

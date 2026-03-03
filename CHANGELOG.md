@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.11.0] - 2026-03-03
+
+### Added
+- `earlyoom` component: Early OOM killer for Linux (apt, dnf, pacman)
+- Swap file management in `ctdev configure linux-mint` (creates 8GB swap file, adds to fstab)
+- Swap info display in `ctdev configure linux-mint --show`
+- Swap reset in `ctdev configure linux-mint --reset`
+
+### Changed
+- Repository URLs updated to `ConnerTechnology/dotfiles`
+- Git config: added SSH signing key, removed `compactionHeuristic`
+- Claude Code settings: added `Bash(journalctl:*)` permission
+- Component count updated to 35
+
 ## [7.10.1] - 2026-03-02
 
 ### Removed
@@ -259,7 +273,7 @@ All notable changes to this project will be documented in this file.
 ## [5.8.0] - 2026-01-12
 
 ### Added
-- One-liner install script: `curl -fsSL https://raw.githubusercontent.com/thomasconner/dotfiles/main/install.sh | bash`
+- One-liner install script: `curl -fsSL https://raw.githubusercontent.com/ConnerTechnology/dotfiles/main/install.sh | bash`
 
 ## [5.7.1] - 2026-01-12
 

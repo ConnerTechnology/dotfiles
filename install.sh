@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # Bootstrap script for ctdev dotfiles
-# Usage: curl -fsSL https://raw.githubusercontent.com/thomasconner/dotfiles/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/ConnerTechnology/dotfiles/main/install.sh | bash
 
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/dotfiles}"
-REPO_URL="https://github.com/thomasconner/dotfiles.git"
+REPO_URL="https://github.com/ConnerTechnology/dotfiles.git"
 CTDEV_SYMLINK="$HOME/.local/bin/ctdev"
 
 # Colors
