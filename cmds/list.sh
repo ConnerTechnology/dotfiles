@@ -10,9 +10,9 @@ cmd_list() {
     log_step "Components"
     echo
 
-    local name desc _script
+    local name _desc _script
     for component in "${COMPONENTS[@]}"; do
-        IFS=':' read -r name desc _script <<< "$component"
+        IFS=':' read -r name _desc _script <<< "$component"
 
         local status_text status_color
 

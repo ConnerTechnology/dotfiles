@@ -99,18 +99,18 @@ cmd_info() {
     local gpu_info=""
     local gpu_vram=""
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        gpu_info=$(system_profiler SPDisplaysDataType 2>/dev/null | grep "Chipset Model" | head -1 | cut -d: -f2 | sed 's/^ //')
+        gpu_info=$(system_profiler SPDisplaysDataType 2>/dev/null | grep "Chipset Model" | head -1 | cut -d: -f2 | sed 's/^ //' || true)
     elif command -v nvidia-smi >/dev/null 2>&1; then
         # NVIDIA GPU with nvidia-smi available
-        gpu_info=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
-        gpu_vram=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader 2>/dev/null | head -1 | sed 's/ MiB//')
+        gpu_info=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 || true)
+        gpu_vram=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader 2>/dev/null | head -1 | sed 's/ MiB//' || true)
         if [[ -n "$gpu_vram" ]]; then
             # Convert MiB to GB (round)
             gpu_vram_gb=$(( (gpu_vram + 512) / 1024 ))
             gpu_info="$gpu_info (${gpu_vram_gb} GB VRAM)"
         fi
     elif command -v lspci >/dev/null 2>&1; then
-        gpu_info=$(lspci 2>/dev/null | grep -i "vga\|3d\|display" | head -1 | sed 's/.*: //')
+        gpu_info=$(lspci 2>/dev/null | grep -i "vga\|3d\|display" | head -1 | sed 's/.*: //' || true)
     fi
     if [[ -n "$gpu_info" ]]; then
         echo "  GPU:             $gpu_info"
@@ -121,8 +121,8 @@ cmd_info() {
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS APFS: df reports misleading numbers, use diskutil instead
         local container_total container_free
-        container_total=$(diskutil info / 2>/dev/null | grep "Container Total Space" | awk -F'[()]' '{print $2}' | awk '{print $1}')
-        container_free=$(diskutil info / 2>/dev/null | grep "Container Free Space" | awk -F'[()]' '{print $2}' | awk '{print $1}')
+        container_total=$(diskutil info / 2>/dev/null | grep "Container Total Space" | awk -F'[()]' '{print $2}' | awk '{print $1}' || true)
+        container_free=$(diskutil info / 2>/dev/null | grep "Container Free Space" | awk -F'[()]' '{print $2}' | awk '{print $1}' || true)
         if [[ -n "$container_total" && -n "$container_free" ]]; then
             local used_bytes=$(( container_total - container_free ))
             # Convert to human readable

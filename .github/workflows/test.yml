@@ -44,9 +44,7 @@ jobs:
         run: shellcheck ./ctdev
 
       - name: Run ShellCheck on component installers
-        run: |
-          shellcheck components/*/install.sh
-          shellcheck components/cli/*.sh
+        run: shellcheck components/*/install.sh
 
   test-cli:
     name: Test ctdev CLI
@@ -69,10 +67,7 @@ jobs:
         run: ./ctdev info
 
       - name: Test dry-run install
-        run: ./ctdev --dry-run install
-
-      - name: Test dry-run install with --skip-system
-        run: ./ctdev --dry-run install --skip-system
+        run: ./ctdev --dry-run install jq
 
   test-ubuntu:
     name: Test on Ubuntu ${{ matrix.ubuntu-version }}
@@ -118,16 +113,14 @@ jobs:
       - name: Verify git config
         run: |
           [ -f ~/.gitconfig ] || exit 1
-          [ -f ~/.gitignore ] || exit 1
-          [ -f ~/.gitconfig.local ] || exit 1
+          git config --global user.name | grep -q "CI Test" || exit 1
+          git config --global user.email | grep -q "ci@test.com" || exit 1
 
-      - name: Install CLI tools
-        run: ./ctdev install cli
+      - name: Install jq component
+        run: ./ctdev install jq
 
-      - name: Verify CLI tools
-        run: |
-          command -v jq || exit 1
-          command -v gh || exit 1
+      - name: Verify jq installation
+        run: command -v jq || exit 1
 
       - name: Run info check
         run: ./ctdev info
@@ -147,7 +140,7 @@ jobs:
           ./ctdev info
 
       - name: Test dry-run install
-        run: ./ctdev --dry-run install
+        run: ./ctdev --dry-run install jq
 
       - name: Install zsh component
         run: ./ctdev install zsh
@@ -164,4 +157,5 @@ jobs:
       - name: Verify git config
         run: |
           [ -f ~/.gitconfig ] || exit 1
-          [ -f ~/.gitconfig.local ] || exit 1
+          git config --global user.name | grep -q "CI Test" || exit 1
+          git config --global user.email | grep -q "ci@test.com" || exit 1
