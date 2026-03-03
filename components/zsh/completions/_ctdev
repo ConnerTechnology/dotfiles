@@ -64,8 +64,6 @@ _ctdev_gpu_subcommands() {
     subcommands=(
         'status:Check secure boot and driver signing status'
         'setup:Configure MOK signing for NVIDIA drivers'
-        'sign:Sign current NVIDIA kernel modules'
-        'info:Show GPU hardware information'
     )
     _describe -t subcommands 'subcommand' subcommands
 }
@@ -124,7 +122,25 @@ _ctdev() {
                     esac
                     ;;
                 gpu)
-                    _ctdev_gpu_subcommands
+                    local gpu_sub="${words[2]}"
+                    case "$gpu_sub" in
+                        status)
+                            _arguments -s \
+                                '(-h --help)'{-h,--help}'[Show help]' \
+                                '(-v --verbose)'{-v,--verbose}'[Enable verbose output]'
+                            ;;
+                        setup)
+                            _arguments -s \
+                                '(-h --help)'{-h,--help}'[Show help]' \
+                                '(-v --verbose)'{-v,--verbose}'[Enable verbose output]' \
+                                '(-n --dry-run)'{-n,--dry-run}'[Preview changes without applying]' \
+                                '(-f --force)'{-f,--force}'[Force re-run even if configured]' \
+                                '--recover[Re-enroll MOK key after CMOS reset]'
+                            ;;
+                        *)
+                            _ctdev_gpu_subcommands
+                            ;;
+                    esac
                     ;;
                 list|info)
                     _arguments -s "${global_flags[@]}"

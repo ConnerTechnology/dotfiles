@@ -239,20 +239,19 @@ Usage: ctdev gpu <subcommand> [OPTIONS]
 Subcommands:
     status    Check secure boot and driver signing status
     setup     Configure MOK signing for NVIDIA drivers
-    sign      Sign current NVIDIA kernel modules
-    info      Show GPU hardware information
 
 Options:
     -h, --help       Show this help message
     -v, --verbose    Enable verbose output
     -n, --dry-run    Preview changes without applying
     -f, --force      Force re-run setup even if already configured
+    --recover        Re-enroll MOK key after CMOS reset (use with setup)
 
 Examples:
-    ctdev gpu status           Check if driver signing is configured
-    ctdev gpu setup            Set up MOK signing (interactive)
-    ctdev gpu sign             Re-sign modules after kernel update
-    ctdev gpu info             Show GPU hardware details
+    ctdev gpu status              Check if driver signing is configured
+    ctdev gpu setup               Set up MOK signing (interactive)
+    ctdev gpu setup --recover     Re-enroll key after CMOS/firmware reset
+    ctdev gpu setup --force       Re-run full setup even if configured
 EOF
 }
 

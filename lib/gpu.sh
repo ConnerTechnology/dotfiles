@@ -10,6 +10,7 @@
 MOK_DIR="/var/lib/shim-signed/mok"
 MOK_PRIV="$MOK_DIR/MOK.priv"
 MOK_CERT="$MOK_DIR/MOK.der"
+DKMS_FRAMEWORK_CONF="/etc/dkms/framework.conf"
 DKMS_CONF_DIR="/etc/dkms/framework.conf.d"
 DKMS_CONF="$DKMS_CONF_DIR/sign-modules.conf"
 DKMS_SIGN_SCRIPT="/etc/dkms/sign-module.sh"
@@ -55,6 +56,29 @@ get_nvidia_driver_version() {
     echo "$version"
 }
 
+# Detect NVIDIA driver variant (open vs closed kernel modules)
+# Returns: "open", "closed", or "unknown"
+detect_nvidia_variant() {
+    # Check the license field - open modules use "Dual MIT/GPL"
+    local license
+    license=$(modinfo nvidia 2>/dev/null | grep "^license:" | sed 's/^license:[[:space:]]*//' || true)
+
+    if [[ "$license" == *"MIT"* ]] || [[ "$license" == *"GPL"* ]]; then
+        echo "open"
+    elif [[ -n "$license" ]]; then
+        echo "closed"
+    else
+        # Fallback: check installed packages
+        if dpkg -l 2>/dev/null | grep -E "nvidia-.*-open " >/dev/null 2>&1; then
+            echo "open"
+        elif dpkg -l 2>/dev/null | grep -E "nvidia-driver-[0-9]+ " >/dev/null 2>&1; then
+            echo "closed"
+        else
+            echo "unknown"
+        fi
+    fi
+}
+
 # Get the current rendering backend
 # Returns: "nvidia", "llvmpipe", or "other"
 get_rendering_backend() {
@@ -79,10 +103,22 @@ get_rendering_backend() {
 # MOK/Signing Detection Functions
 ###############################################################################
 
-# Check if MOK key pair exists
+# Check if MOK key pair exists (MOK.priv + MOK.der only)
 # Returns: 0 if both files exist, 1 if not
 mok_key_exists() {
     [[ -f "$MOK_PRIV" ]] && [[ -f "$MOK_CERT" ]]
+}
+
+# Find unexpected files in MOK_DIR (anything besides MOK.priv and MOK.der)
+# Returns: list of paths to clutter files, one per line
+find_mok_clutter() {
+    if [[ ! -d "$MOK_DIR" ]]; then
+        return
+    fi
+    find "$MOK_DIR" -maxdepth 1 -type f \
+        ! -name "MOK.priv" \
+        ! -name "MOK.der" \
+        2>/dev/null
 }
 
 # Check if our MOK key is enrolled in firmware
@@ -104,7 +140,7 @@ mok_key_enrolled() {
         return 1
     fi
 
-    # Check if it's in the enrolled list (case-insensitive, keep colons for matching)
+    # Check if it's in the enrolled list (case-insensitive)
     # Note: Using grep without -q to avoid SIGPIPE issues with pipefail
     mokutil --list-enrolled 2>/dev/null | grep -i "$our_fingerprint" >/dev/null 2>&1
 }
@@ -126,10 +162,54 @@ is_module_signed() {
     [[ -n "$sig_info" ]]
 }
 
-# Check if DKMS signing is configured
+# Check if DKMS signing is configured (framework.conf or conf.d)
 # Returns: 0 if configured, 1 if not
 dkms_signing_configured() {
+    # Check framework.conf approach (preferred)
+    if dkms_framework_conf_configured; then
+        return 0
+    fi
+    # Check conf.d approach (legacy)
     [[ -f "$DKMS_CONF" ]] && [[ -f "$DKMS_SIGN_SCRIPT" ]]
+}
+
+# Check if /etc/dkms/framework.conf has correct signing configuration
+# Returns: 0 if mok_signing_key and mok_certificate are uncommented and correct
+dkms_framework_conf_configured() {
+    if [[ ! -f "$DKMS_FRAMEWORK_CONF" ]]; then
+        return 1
+    fi
+    local has_key has_cert
+    has_key=$(grep -E "^mok_signing_key=$MOK_PRIV$" "$DKMS_FRAMEWORK_CONF" 2>/dev/null || true)
+    has_cert=$(grep -E "^mok_certificate=$MOK_CERT$" "$DKMS_FRAMEWORK_CONF" 2>/dev/null || true)
+    [[ -n "$has_key" ]] && [[ -n "$has_cert" ]]
+}
+
+# Check if module signature matches an enrolled MOK key
+# Compares the nvidia module's signer against our MOK certificate CN
+# Returns: 0 if matches, 1 if not
+module_sig_matches_enrolled() {
+    if ! mok_key_exists; then
+        return 1
+    fi
+
+    # Get the signer name from the nvidia module
+    local signer
+    signer=$(modinfo nvidia 2>/dev/null | grep "^signer:" | sed 's/^signer:[[:space:]]*//' || true)
+
+    if [[ -z "$signer" ]]; then
+        return 1
+    fi
+
+    # Get our certificate's CN
+    local our_cn
+    our_cn=$(openssl x509 -inform DER -in "$MOK_CERT" -subject -noout 2>/dev/null | sed 's/.*CN *= *//' || true)
+
+    if [[ -z "$our_cn" ]]; then
+        return 1
+    fi
+
+    [[ "$signer" == "$our_cn" ]]
 }
 
 ###############################################################################
@@ -149,7 +229,7 @@ find_nvidia_modules() {
     fi
 }
 
-# Create MOK key pair
+# Create MOK key pair (MOK.priv + MOK.der only)
 # Returns: 0 on success, 1 on failure
 create_mok_keypair() {
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
@@ -160,21 +240,68 @@ create_mok_keypair() {
     # Create directory
     maybe_sudo mkdir -p "$MOK_DIR"
 
-    # Generate key pair
+    # Generate key pair (private key + DER certificate only)
     maybe_sudo openssl req -new -x509 -newkey rsa:2048 \
         -keyout "$MOK_PRIV" \
         -outform DER \
         -out "$MOK_CERT" \
         -days 36500 \
-        -subj "/CN=DKMS Module Signing Key/" \
+        -subj "/CN=Custom NVIDIA Module Signing/" \
         -nodes 2>/dev/null
 
-    # Set secure permissions on private key
+    # Set secure permissions
     maybe_sudo chmod 600 "$MOK_PRIV"
     maybe_sudo chmod 644 "$MOK_CERT"
 }
 
-# Configure DKMS for automatic module signing
+# Remove clutter files from MOK_DIR (anything besides MOK.priv and MOK.der)
+# Returns: 0 on success
+clean_mok_clutter() {
+    local clutter
+    clutter=$(find_mok_clutter)
+
+    if [[ -z "$clutter" ]]; then
+        return 0
+    fi
+
+    while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        if [[ "${DRY_RUN:-false}" == "true" ]]; then
+            log_info "[DRY-RUN] Would remove: $file"
+        else
+            maybe_sudo rm -f "$file"
+            log_info "Removed: $file"
+        fi
+    done <<< "$clutter"
+}
+
+# Configure /etc/dkms/framework.conf for automatic module signing
+# Ensures mok_signing_key and mok_certificate lines are uncommented and correct
+# Returns: 0 on success, 1 on failure
+configure_dkms_framework_conf() {
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "[DRY-RUN] Would configure $DKMS_FRAMEWORK_CONF"
+        return 0
+    fi
+
+    if [[ ! -f "$DKMS_FRAMEWORK_CONF" ]]; then
+        log_error "$DKMS_FRAMEWORK_CONF not found. Is DKMS installed?"
+        return 1
+    fi
+
+    # Backup framework.conf before modifying
+    maybe_sudo cp "$DKMS_FRAMEWORK_CONF" "${DKMS_FRAMEWORK_CONF}.backup-$(date +%Y%m%d-%H%M%S)"
+
+    # Remove existing mok_signing_key and mok_certificate lines (commented or not)
+    maybe_sudo sed -i '/^[#[:space:]]*mok_signing_key=/d' "$DKMS_FRAMEWORK_CONF"
+    maybe_sudo sed -i '/^[#[:space:]]*mok_certificate=/d' "$DKMS_FRAMEWORK_CONF"
+
+    # Append correct uncommented lines
+    echo "mok_signing_key=$MOK_PRIV" | maybe_sudo tee -a "$DKMS_FRAMEWORK_CONF" > /dev/null
+    echo "mok_certificate=$MOK_CERT" | maybe_sudo tee -a "$DKMS_FRAMEWORK_CONF" > /dev/null
+}
+
+# Configure DKMS for automatic module signing (legacy conf.d approach)
 # Returns: 0 on success, 1 on failure
 configure_dkms_signing() {
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
@@ -199,6 +326,52 @@ EOF
 EOF
 
     maybe_sudo chmod +x "$DKMS_SIGN_SCRIPT"
+}
+
+# Get NVIDIA DKMS module name/version
+# Returns: "nvidia/550.120" format string or empty
+get_nvidia_dkms_info() {
+    local dkms_line
+    dkms_line=$(dkms status 2>/dev/null | grep -i nvidia | head -1 || true)
+    if [[ -z "$dkms_line" ]]; then
+        return 1
+    fi
+    # Format: "nvidia/550.120, 6.8.0-51-generic, x86_64: installed"
+    echo "$dkms_line" | cut -d, -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+}
+
+# Rebuild NVIDIA DKMS module for current kernel
+# Removes and reinstalls to trigger signing with the configured key
+# Returns: 0 on success, 1 on failure
+dkms_rebuild_nvidia() {
+    local nvidia_info
+    nvidia_info=$(get_nvidia_dkms_info) || true
+
+    if [[ -z "$nvidia_info" ]]; then
+        log_error "No NVIDIA DKMS module found"
+        return 1
+    fi
+
+    local kernel_version
+    kernel_version=$(uname -r)
+
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "[DRY-RUN] Would remove: dkms remove $nvidia_info -k $kernel_version"
+        log_info "[DRY-RUN] Would install: dkms install $nvidia_info -k $kernel_version"
+        return 0
+    fi
+
+    log_info "Removing NVIDIA DKMS module: $nvidia_info for kernel $kernel_version"
+    maybe_sudo dkms remove "$nvidia_info" -k "$kernel_version" --no-depmod 2>/dev/null || true
+
+    log_info "Rebuilding NVIDIA DKMS module: $nvidia_info for kernel $kernel_version"
+    if maybe_sudo dkms install "$nvidia_info" -k "$kernel_version"; then
+        log_success "DKMS rebuild complete"
+        return 0
+    else
+        log_error "DKMS rebuild failed"
+        return 1
+    fi
 }
 
 # Sign NVIDIA modules for current kernel
