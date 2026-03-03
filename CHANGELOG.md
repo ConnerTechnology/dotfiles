@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.12.0] - 2026-03-03
+
+### Added
+- Comprehensive GPU driver signing for Secure Boot (`ctdev gpu status` and `ctdev gpu setup`)
+  - Detect open vs closed NVIDIA driver variant
+  - MOK clutter detection and cleanup (flags unexpected files in `/var/lib/shim-signed/mok/`)
+  - DKMS `framework.conf` configuration for automatic module signing
+  - Module signature verification against enrolled MOK certificate
+  - `--recover` flag for re-enrolling MOK key after CMOS/firmware reset
+  - DKMS rebuild with post-rebuild signature verification
+
+### Changed
+- `ctdev gpu` reduced to 2 subcommands: `status` and `setup` (removed `sign` and `info`)
+- Zsh completion updated for new GPU subcommand structure
+
+### Fixed
+- CI test failures: removed references to nonexistent `cli` component, `--skip-system` flag, `~/.gitignore`, and `~/.gitconfig.local`
+- CI `shellcheck components/cli/*.sh` step removed (directory doesn't exist)
+- `ctdev info` crash on CI due to `pipefail` + `grep` in GPU and disk detection pipelines
+- ShellCheck SC2034 warning for unused variable in `cmds/list.sh`
+- `--dry-run install` now requires a component name (matches CLI behavior)
+- Git configure `--skip` no longer ignores explicit `--name`/`--email` arguments
+
 ## [7.11.0] - 2026-03-03
 
 ### Added
