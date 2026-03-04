@@ -77,6 +77,8 @@ if [[ "$SHOW_HELP" == "true" ]]; then
         info)      show_info_help ;;
         configure) show_configure_help ;;
         gpu)       show_gpu_help ;;
+        setup)     show_setup_help ;;
+        cleanup)   show_cleanup_help ;;
         *)         show_main_help ;;
     esac
     exit 0

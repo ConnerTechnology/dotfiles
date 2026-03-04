@@ -39,7 +39,9 @@ Commands:
     list                      List components with status
     info                      Show system information
     configure <target>        Configure git, macos, or linux-mint settings
-    gpu <subcommand>          Manage GPU driver signing for Secure Boot
+    gpu <subcommand>          Manage GPU drivers and Secure Boot signing
+    setup                     Set up a fresh system (runs all steps)
+    cleanup <subcommand>      Clean up kernels and APT repos
 
 Options:
     -h, --help       Show this help message
@@ -58,6 +60,8 @@ Examples:
     ctdev configure git                  Configure git user
     ctdev configure macos                Configure macOS settings
     ctdev configure linux-mint           Configure Linux Mint settings
+    ctdev setup                          Run full fresh-install setup
+    ctdev cleanup kernels                Remove old kernel versions
 
 For help on a specific command:
     ctdev COMMAND --help
@@ -255,6 +259,42 @@ Examples:
 EOF
 }
 
+# Show help for setup command
+show_setup_help() {
+    cat << 'EOF'
+ctdev setup - Set up a fresh system
+
+Usage: ctdev setup [OPTIONS]
+
+Runs all setup steps in the correct order for the current OS.
+
+Options:
+    -h, --help           Show this help message
+    -n, --dry-run        Preview changes without applying
+    --skip-update        Skip system update step
+    --skip-gpu           Skip GPU setup step
+    --skip-configure     Skip system configuration step
+    --skip-cleanup       Skip cleanup steps
+
+Run 'ctdev setup --help' for full details.
+EOF
+}
+
+# Show help for cleanup command
+show_cleanup_help() {
+    cat << 'EOF'
+ctdev cleanup - Clean up system resources
+
+Usage: ctdev cleanup <subcommand> [OPTIONS]
+
+Subcommands:
+    kernels   Remove old kernel versions
+    apt       Audit and clean APT repositories
+
+Run 'ctdev cleanup --help' for full details.
+EOF
+}
+
 # Parse global flags and set environment variables
 # Returns the remaining arguments after flags are consumed
 # Usage: eval "$(parse_global_flags "$@")"
@@ -313,7 +353,7 @@ parse_global_flags() {
 # Validate that a command exists
 require_command() {
     local cmd="$1"
-    local valid_commands="install uninstall update list info configure gpu"
+    local valid_commands="install uninstall update list info configure gpu setup cleanup"
 
     if [[ -z "$cmd" ]]; then
         return 1
