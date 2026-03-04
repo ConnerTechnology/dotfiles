@@ -6,18 +6,20 @@
 source "${DOTFILES_ROOT}/lib/gpu.sh"
 
 ###############################################################################
-# Subcommand: status
+# Subcommand: info
 ###############################################################################
 
-gpu_status() {
+gpu_info() {
+    log_step "GPU Information"
+    show_gpu_hardware_info "  "
+
     # macOS doesn't use Secure Boot/MOK signing
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        log_info "GPU driver signing is not applicable on macOS."
-        show_gpu_hardware_info "  "
         return 0
     fi
 
-    log_step "GPU Signing Status"
+    echo
+    log_step "Secure Boot Signing Status"
 
     local issues=0
 
@@ -284,7 +286,7 @@ gpu_setup() {
         echo "   6. Enter the password you just set"
         echo "   7. Select 'Reboot'"
         echo
-        echo "   After reboot, run 'ctdev gpu status' to verify."
+        echo "   After reboot, run 'ctdev gpu info' to verify."
         echo
         echo "═══════════════════════════════════════════════════════════════"
         echo
@@ -360,7 +362,7 @@ gpu_recover() {
         echo "   6. Enter the password you just set"
         echo "   7. Select 'Reboot'"
         echo
-        echo "   After reboot, run 'ctdev gpu status' to verify."
+        echo "   After reboot, run 'ctdev gpu info' to verify."
         echo
         echo "═══════════════════════════════════════════════════════════════"
         echo
@@ -375,12 +377,12 @@ gpu_recover() {
 
 show_gpu_help() {
     cat << 'EOF'
-ctdev gpu - Manage GPU driver signing for Secure Boot
+ctdev gpu - Manage GPU drivers and Secure Boot signing
 
 Usage: ctdev gpu <subcommand> [OPTIONS]
 
 Subcommands:
-    status    Check secure boot and driver signing status
+    info      Show GPU hardware info and signing status
     setup     Configure MOK signing for NVIDIA drivers
 
 Options:
@@ -391,7 +393,7 @@ Options:
     --recover        Re-enroll MOK key after CMOS reset (use with setup)
 
 Examples:
-    ctdev gpu status              Check if driver signing is configured
+    ctdev gpu info                Show GPU info and signing status
     ctdev gpu setup               Set up MOK signing (interactive)
     ctdev gpu setup --recover     Re-enroll key after CMOS/firmware reset
     ctdev gpu setup --force       Re-run full setup even if configured
@@ -417,8 +419,8 @@ cmd_gpu() {
             show_gpu_help
             return 0
             ;;
-        status)
-            gpu_status
+        info|status)
+            gpu_info
             ;;
         setup)
             # Check for --recover flag

@@ -15,10 +15,9 @@ ctdev info                      # Show system information
 ctdev configure git             # Configure git user
 ctdev configure macos           # Configure macOS defaults (macOS only)
 ctdev configure linux-mint      # Configure Linux Mint defaults (Linux Mint only)
-ctdev gpu status                # Check secure boot and driver signing status
+ctdev gpu info                  # Show GPU hardware info and signing status
 ctdev gpu setup                 # Configure MOK signing for NVIDIA drivers
 ctdev gpu sign                  # Sign current NVIDIA kernel modules
-ctdev gpu info                  # Show GPU hardware information
 ```
 
 **Flags:** `--help`, `--verbose`, `--dry-run`, `--force`, `--version`, `--refresh-keys`

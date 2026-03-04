@@ -232,12 +232,12 @@ EOF
 # Show help for gpu command
 show_gpu_help() {
     cat << 'EOF'
-ctdev gpu - Manage GPU driver signing for Secure Boot
+ctdev gpu - Manage GPU drivers and Secure Boot signing
 
 Usage: ctdev gpu <subcommand> [OPTIONS]
 
 Subcommands:
-    status    Check secure boot and driver signing status
+    info      Show GPU hardware info and signing status
     setup     Configure MOK signing for NVIDIA drivers
 
 Options:
@@ -248,7 +248,7 @@ Options:
     --recover        Re-enroll MOK key after CMOS reset (use with setup)
 
 Examples:
-    ctdev gpu status              Check if driver signing is configured
+    ctdev gpu info                Show GPU info and signing status
     ctdev gpu setup               Set up MOK signing (interactive)
     ctdev gpu setup --recover     Re-enroll key after CMOS/firmware reset
     ctdev gpu setup --force       Re-run full setup even if configured
