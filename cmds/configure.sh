@@ -629,13 +629,19 @@ linux_mint_show() {
         else
             printf "  %-40s %s\n" "PreserveVideoMemoryAllocations:" "not set"
         fi
-        for svc in nvidia-suspend nvidia-resume nvidia-hibernate; do
+        for svc in nvidia-suspend nvidia-resume nvidia-hibernate nvidia-persistenced; do
             local state
             state=$(systemctl is-enabled "${svc}.service" 2>/dev/null || echo "not found")
             printf "  %-40s %s\n" "${svc}.service:" "$state"
         done
         echo ""
     fi
+
+    echo "Storage:"
+    local fstrim_state
+    fstrim_state=$(systemctl is-enabled "fstrim.timer" 2>/dev/null || echo "not found")
+    printf "  %-40s %s\n" "fstrim.timer:" "$fstrim_state"
+    echo ""
 
     if [[ -f /etc/default/grub ]]; then
         echo "GRUB:"
@@ -674,6 +680,7 @@ linux_mint_apply() {
         if lsmod | grep -q "^nvidia "; then
             log_info "[DRY-RUN] Would configure NVIDIA suspend (GRUB parameters, systemd services)"
         fi
+        log_info "[DRY-RUN] Would enable fstrim.timer for SSD TRIM"
         log_success "Linux Mint defaults would be configured"
         return 0
     fi
@@ -757,12 +764,20 @@ linux_mint_apply() {
     # NVIDIA suspend services (only if NVIDIA driver is loaded)
     if lsmod | grep -q "^nvidia "; then
         log_info "Configuring NVIDIA suspend services..."
-        for svc in nvidia-suspend nvidia-resume nvidia-hibernate; do
+        for svc in nvidia-suspend nvidia-resume nvidia-hibernate nvidia-persistenced; do
             if systemctl list-unit-files "${svc}.service" &>/dev/null; then
                 maybe_sudo systemctl enable "${svc}.service" 2>/dev/null || true
             fi
         done
         log_success "NVIDIA suspend stability configured"
+    fi
+
+    # Enable SSD TRIM timer
+    log_info "Configuring SSD TRIM..."
+    if systemctl list-unit-files "fstrim.timer" &>/dev/null; then
+        maybe_sudo systemctl enable fstrim.timer 2>/dev/null || true
+        maybe_sudo systemctl start fstrim.timer 2>/dev/null || true
+        log_success "fstrim.timer enabled"
     fi
 
     log_success "Linux Mint defaults configured"
@@ -785,6 +800,7 @@ linux_mint_reset() {
         if lsmod | grep -q "^nvidia "; then
             log_info "[DRY-RUN] Would reset NVIDIA suspend settings (GRUB parameters, systemd services)"
         fi
+        log_info "[DRY-RUN] Would disable fstrim.timer"
         log_success "Linux Mint defaults would be reset"
         return 0
     fi
@@ -843,10 +859,14 @@ linux_mint_reset() {
         remove_grub_cmdline_param "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
         remove_grub_cmdline_param "nvidia.NVreg_EnableS0ixPowerManagement=0"
         remove_grub_cmdline_param "pcie_aspm=off"
-        for svc in nvidia-suspend nvidia-resume nvidia-hibernate; do
+        for svc in nvidia-suspend nvidia-resume nvidia-hibernate nvidia-persistenced; do
             maybe_sudo systemctl disable "${svc}.service" 2>/dev/null || true
         done
     fi
+
+    log_info "Resetting fstrim..."
+    maybe_sudo systemctl stop fstrim.timer 2>/dev/null || true
+    maybe_sudo systemctl disable fstrim.timer 2>/dev/null || true
 
     maybe_sudo update-grub
 
