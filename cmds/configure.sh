@@ -437,6 +437,41 @@ configure_linux_mint() {
     fi
 }
 
+# Set a GRUB variable in /etc/default/grub
+# Usage: set_grub_var "GRUB_TIMEOUT" "0"
+set_grub_var() {
+    local var="$1"
+    local value="$2"
+    local grub_file="/etc/default/grub"
+    [[ -f "$grub_file" ]] || return 1
+
+    if grep -q "^${var}=" "$grub_file"; then
+        maybe_sudo sed -i "s/^${var}=.*/${var}=${value}/" "$grub_file"
+    else
+        echo "${var}=${value}" | maybe_sudo tee -a "$grub_file" > /dev/null
+    fi
+}
+
+# Add a parameter to GRUB_CMDLINE_LINUX_DEFAULT if not already present
+add_grub_cmdline_param() {
+    local param="$1"
+    local grub_file="/etc/default/grub"
+    [[ -f "$grub_file" ]] || return 1
+
+    if ! grep -q "$param" "$grub_file"; then
+        maybe_sudo sed -i "s/\\(GRUB_CMDLINE_LINUX_DEFAULT=\"[^\"]*\\)\"/\\1 ${param}\"/" "$grub_file"
+    fi
+}
+
+# Remove a parameter from GRUB_CMDLINE_LINUX_DEFAULT
+remove_grub_cmdline_param() {
+    local param="$1"
+    local grub_file="/etc/default/grub"
+    [[ -f "$grub_file" ]] || return 1
+
+    maybe_sudo sed -i "s/ ${param}//" "$grub_file"
+}
+
 linux_mint_show() {
     echo ""
     log_info "Linux Mint Configuration"
@@ -601,6 +636,27 @@ linux_mint_show() {
         done
         echo ""
     fi
+
+    if [[ -f /etc/default/grub ]]; then
+        echo "GRUB:"
+        local grub_val
+        grub_val=$(grep "^GRUB_TIMEOUT_STYLE=" /etc/default/grub 2>/dev/null | cut -d= -f2 || echo "<not set>")
+        [[ -z "$grub_val" ]] && grub_val="<not set>"
+        printf "  %-40s %s\n" "Timeout style:" "$grub_val"
+
+        grub_val=$(grep "^GRUB_TIMEOUT=" /etc/default/grub 2>/dev/null | cut -d= -f2 || echo "<not set>")
+        [[ -z "$grub_val" ]] && grub_val="<not set>"
+        printf "  %-40s %s\n" "Timeout:" "$grub_val"
+
+        grub_val=$(grep "^GRUB_DISABLE_OS_PROBER=" /etc/default/grub 2>/dev/null | cut -d= -f2 || echo "<not set>")
+        [[ -z "$grub_val" ]] && grub_val="<not set>"
+        printf "  %-40s %s\n" "OS prober disabled:" "$grub_val"
+
+        grub_val=$(grep "^GRUB_CMDLINE_LINUX_DEFAULT=" /etc/default/grub 2>/dev/null | sed 's/^GRUB_CMDLINE_LINUX_DEFAULT=//' || echo "<not set>")
+        [[ -z "$grub_val" ]] && grub_val="<not set>"
+        printf "  %-40s %s\n" "Kernel params:" "$grub_val"
+        echo ""
+    fi
 }
 
 linux_mint_apply() {
@@ -614,8 +670,9 @@ linux_mint_apply() {
         log_info "[DRY-RUN] Would configure Sound settings (disable event sounds)"
         log_info "[DRY-RUN] Would configure Nemo settings (list view)"
         log_info "[DRY-RUN] Would create 8GB swap file at /swapfile"
+        log_info "[DRY-RUN] Would configure GRUB (timeout=0, hidden, os-prober disabled)"
         if lsmod | grep -q "^nvidia "; then
-            log_info "[DRY-RUN] Would configure NVIDIA suspend (GRUB parameter, systemd services)"
+            log_info "[DRY-RUN] Would configure NVIDIA suspend (GRUB parameters, systemd services)"
         fi
         log_success "Linux Mint defaults would be configured"
         return 0
@@ -674,22 +731,32 @@ linux_mint_apply() {
         fi
     fi
 
-    # NVIDIA Suspend Stability (only if NVIDIA driver is loaded)
+    # GRUB Configuration
+    log_info "Configuring GRUB..."
+    set_grub_var "GRUB_TIMEOUT_STYLE" "hidden"
+    set_grub_var "GRUB_TIMEOUT" "0"
+    set_grub_var "GRUB_DISABLE_OS_PROBER" "true"
+
+    # Fix Linux Mint override that re-enables os-prober
+    local mint_grub_cfg="/etc/default/grub.d/50_linuxmint.cfg"
+    if [[ -f "$mint_grub_cfg" ]] && grep -q "GRUB_DISABLE_OS_PROBER=false" "$mint_grub_cfg"; then
+        maybe_sudo sed -i "s/GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=true/" "$mint_grub_cfg"
+    fi
+
+    # NVIDIA kernel parameters (only if NVIDIA driver is loaded)
     if lsmod | grep -q "^nvidia "; then
-        log_info "Configuring NVIDIA suspend stability..."
+        log_info "Configuring NVIDIA kernel parameters..."
+        add_grub_cmdline_param "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
+        add_grub_cmdline_param "nvidia.NVreg_EnableS0ixPowerManagement=0"
+        add_grub_cmdline_param "pcie_aspm=off"
+    fi
 
-        # Add PreserveVideoMemoryAllocations kernel parameter to GRUB
-        local grub_file="/etc/default/grub"
-        local nvidia_param="nvidia.NVreg_PreserveVideoMemoryAllocations=1"
-        if [[ -f "$grub_file" ]] && ! grep -q "$nvidia_param" "$grub_file"; then
-            log_info "Adding $nvidia_param to GRUB..."
-            maybe_sudo sed -i "s/\\(GRUB_CMDLINE_LINUX_DEFAULT=\"[^\"]*\\)\"/\\1 ${nvidia_param}\"/" "$grub_file"
-            maybe_sudo update-grub
-        else
-            log_info "NVIDIA GRUB parameter already configured"
-        fi
+    maybe_sudo update-grub
+    log_info "GRUB timeout 0 = instant Linux boot. Press F11 during POST for BIOS boot menu to select Windows."
 
-        # Enable NVIDIA suspend/resume/hibernate services
+    # NVIDIA suspend services (only if NVIDIA driver is loaded)
+    if lsmod | grep -q "^nvidia "; then
+        log_info "Configuring NVIDIA suspend services..."
         for svc in nvidia-suspend nvidia-resume nvidia-hibernate; do
             if systemctl list-unit-files "${svc}.service" &>/dev/null; then
                 maybe_sudo systemctl enable "${svc}.service" 2>/dev/null || true
@@ -714,8 +781,9 @@ linux_mint_reset() {
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         log_info "[DRY-RUN] Would reset Power, Screensaver, Keyboard, Mouse, Sound, Nemo, Swap settings"
+        log_info "[DRY-RUN] Would reset GRUB settings (timeout=10, menu, os-prober enabled)"
         if lsmod | grep -q "^nvidia "; then
-            log_info "[DRY-RUN] Would reset NVIDIA suspend settings (GRUB parameter, systemd services)"
+            log_info "[DRY-RUN] Would reset NVIDIA suspend settings (GRUB parameters, systemd services)"
         fi
         log_success "Linux Mint defaults would be reset"
         return 0
@@ -760,18 +828,27 @@ linux_mint_reset() {
         maybe_sudo sed -i '\|/swapfile|d' /etc/fstab
     fi
 
+    log_info "Resetting GRUB settings..."
+    set_grub_var "GRUB_TIMEOUT_STYLE" "menu"
+    set_grub_var "GRUB_TIMEOUT" "10"
+    set_grub_var "GRUB_DISABLE_OS_PROBER" "false"
+
+    local mint_grub_cfg="/etc/default/grub.d/50_linuxmint.cfg"
+    if [[ -f "$mint_grub_cfg" ]] && grep -q "GRUB_DISABLE_OS_PROBER=true" "$mint_grub_cfg"; then
+        maybe_sudo sed -i "s/GRUB_DISABLE_OS_PROBER=true/GRUB_DISABLE_OS_PROBER=false/" "$mint_grub_cfg"
+    fi
+
     if lsmod | grep -q "^nvidia "; then
         log_info "Resetting NVIDIA suspend settings..."
-        local grub_file="/etc/default/grub"
-        local nvidia_param="nvidia.NVreg_PreserveVideoMemoryAllocations=1"
-        if [[ -f "$grub_file" ]] && grep -q "$nvidia_param" "$grub_file"; then
-            maybe_sudo sed -i "s/ ${nvidia_param}//" "$grub_file"
-            maybe_sudo update-grub
-        fi
+        remove_grub_cmdline_param "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
+        remove_grub_cmdline_param "nvidia.NVreg_EnableS0ixPowerManagement=0"
+        remove_grub_cmdline_param "pcie_aspm=off"
         for svc in nvidia-suspend nvidia-resume nvidia-hibernate; do
             maybe_sudo systemctl disable "${svc}.service" 2>/dev/null || true
         done
     fi
+
+    maybe_sudo update-grub
 
     log_success "Linux Mint defaults reset to system defaults"
     log_info "Some settings may require logout/restart to take full effect"
