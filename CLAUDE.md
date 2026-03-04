@@ -5,10 +5,9 @@ Instructions for Claude Code when working with this repository.
 ## ctdev CLI
 
 ```bash
-ctdev components list                  # List components with status
-ctdev components install <component>   # Install specific components
-ctdev components uninstall <component> # Remove specific components
-ctdev update [-y]                      # Update system packages and components
+ctdev install <component...>    # Install specific components
+ctdev uninstall <component...>  # Remove specific components
+ctdev update [-y]               # Update system packages and components
 ctdev update --check                   # List available updates without installing
 ctdev update --refresh-keys            # Refresh APT GPG keys before updating
 ctdev info                             # Show system information
@@ -25,7 +24,7 @@ ctdev cleanup                   # Run all cleanup tasks (with prompts)
 
 ## Components
 
-34 components (run `ctdev components list` to see all):
+34 components:
 
 1password, age, bleachbit, btop, bun, chatgpt, chrome, cleanmymac, claude-code, claude-desktop, codex, dbeaver, docker, doctl, earlyoom, fonts, gh, ghostty, git, git-spice, helm, jq, kubectl, linear, logi-options, node, ruby, shellcheck, slack, sops, terraform, tmux, vscode, zsh
 

@@ -39,7 +39,7 @@ if [[ -t 0 ]]; then
         if [[ -x "$SCRIPT_DIR/ctdev" ]]; then
             "$SCRIPT_DIR/ctdev" components uninstall
         else
-            warn "Could not run ctdev components uninstall (ctdev not executable)"
+            warn "Could not run ctdev uninstall (ctdev not executable)"
         fi
     fi
 fi

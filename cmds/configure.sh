@@ -95,7 +95,7 @@ configure_git() {
     local configure_script="$DOTFILES_ROOT/components/git/configure.sh"
 
     if [[ ! -f "$configure_script" ]]; then
-        log_error "Git component not found. Run 'ctdev components install git' first."
+        log_error "Git component not found. Run 'ctdev install git' first."
         return 1
     fi
 

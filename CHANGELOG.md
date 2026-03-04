@@ -5,20 +5,17 @@ All notable changes to this project will be documented in this file.
 ## [8.0.0] - 2026-03-04
 
 ### Breaking Changes
-- **CLI restructure**: `ctdev install`, `ctdev uninstall`, and `ctdev list` replaced by `ctdev components install`, `ctdev components uninstall`, and `ctdev components list`
+- `ctdev list` removed (use `ctdev install --help` to see available components)
 - `ctdev configure macos` and `ctdev configure linux-mint` removed (use `ctdev setup` instead)
 - `ctdev cleanup kernels` and `ctdev cleanup apt` subcommands removed (use `ctdev cleanup` which runs all tasks sequentially)
 
 ### Added
-- `ctdev components` command with `list`, `install`, and `uninstall` subcommands
 - `ctdev setup --show` to display current system configuration
 - `ctdev setup --reset` to reset system configuration to defaults
-- Zsh completions for `ctdev components` subcommands
 
 ### Changed
 - `ctdev setup` simplified to GPU setup + system configuration (update/cleanup removed from setup flow)
 - `ctdev cleanup` now runs all tasks sequentially with prompts instead of requiring a subcommand
-- Chrome web apps hint moved from `ctdev info` to `ctdev components list`
 
 ### Fixed
 - `ctdev update` silently failing to update zsh, node, and ruby components (git pull used wrong branch name when `origin/HEAD` was unset)

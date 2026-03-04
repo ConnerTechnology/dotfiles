@@ -16,13 +16,13 @@ ctdev uses `maybe_sudo` automatically. If you're in Docker without sudo, some in
 ctdev uses markers in `~/.config/ctdev/`. If detection fails:
 
 ```bash
-ctdev components install <component>  # Re-run to create marker
+ctdev install <component>  # Re-run to create marker
 ```
 
 ## Uninstalling
 
 ```bash
-ctdev components uninstall <component...>   # Remove specific components
+ctdev uninstall <component...>   # Remove specific components
 ~/dotfiles/uninstall.sh          # Remove ctdev itself
 ```
 
@@ -99,9 +99,9 @@ sudo smartctl -a /dev/nvme0n1                      # NVMe health
 
 ## Zsh
 
-**Oh My Zsh not loading:** Check `ls -la ~/.zshrc` - should be a symlink. Re-run `ctdev components install zsh`.
+**Oh My Zsh not loading:** Check `ls -la ~/.zshrc` - should be a symlink. Re-run `ctdev install zsh`.
 
-**Pure prompt missing:** Delete `~/.zsh/pure` and reinstall: `ctdev components install zsh --force`.
+**Pure prompt missing:** Delete `~/.zsh/pure` and reinstall: `ctdev install zsh --force`.
 
 ## Node/Ruby
 
@@ -129,7 +129,7 @@ sudo apt install build-essential libssl-dev libyaml-dev zlib1g-dev libffi-dev
 ctdev --dry-run components install zsh   # Preview without changes
 ctdev --verbose components install zsh   # More output
 ctdev info                               # System diagnostics
-ctdev components list                    # Show component status
+ctdev install --help                    # Show component status
 ```
 
 ## Still stuck?

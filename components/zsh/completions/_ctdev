@@ -26,16 +26,6 @@ _ctdev_components() {
     _describe -t components 'component' components
 }
 
-_ctdev_components_subcommands() {
-    local -a subcommands
-    subcommands=(
-        'list:List components with status'
-        'install:Install specific components'
-        'uninstall:Remove specific components'
-    )
-    _describe -t subcommands 'subcommand' subcommands
-}
-
 _ctdev_configure_targets() {
     local -a targets
     targets=(
@@ -74,12 +64,13 @@ _ctdev() {
 
     local -a commands
     commands=(
-        'components:Manage installable components'
+        'install:Install specific components'
+        'uninstall:Remove specific components'
         'update:Update system packages and components'
         'info:Show system information'
         'configure:Configure git settings'
         'gpu:Manage GPU driver signing for Secure Boot'
-        'setup:Set up a fresh system'
+        'setup:Set up and configure your OS'
         'cleanup:Clean up kernels and APT repos'
     )
 
@@ -94,18 +85,10 @@ _ctdev() {
             ;;
         args)
             case "${words[1]}" in
-                components)
-                    local comp_sub="${words[2]}"
-                    case "$comp_sub" in
-                        install|uninstall)
-                            _arguments -s \
-                                "${global_flags[@]}" \
-                                '*:component:_ctdev_components'
-                            ;;
-                        *)
-                            _ctdev_components_subcommands
-                            ;;
-                    esac
+                install|uninstall)
+                    _arguments -s \
+                        "${global_flags[@]}" \
+                        '*:component:_ctdev_components'
                     ;;
                 update)
                     _arguments -s \

@@ -19,14 +19,14 @@ else
     # On Linux, install via npm (requires Node.js 18+)
     if ! command -v node >/dev/null 2>&1; then
         log_error "Node.js is required to install Codex CLI"
-        log_info "Install Node.js first: ctdev components install node"
+        log_info "Install Node.js first: ctdev install node"
         exit 1
     fi
 
     node_version=$(node --version | sed 's/v//' | cut -d. -f1)
     if [[ "$node_version" -lt 18 ]]; then
         log_error "Node.js 18+ is required (found v$node_version)"
-        log_info "Update Node.js: ctdev components install node --force"
+        log_info "Update Node.js: ctdev install node --force"
         exit 1
     fi
 

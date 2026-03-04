@@ -70,14 +70,15 @@ fi
 # Handle --help for specific commands
 if [[ "$SHOW_HELP" == "true" ]]; then
     case "$COMMAND" in
-        components) show_components_help ;;
-        update)     show_update_help ;;
-        info)       show_info_help ;;
-        configure)  show_configure_help ;;
-        gpu)        show_gpu_help ;;
-        setup)      show_setup_help ;;
-        cleanup)    show_cleanup_help ;;
-        *)          show_main_help ;;
+        install)   show_install_help ;;
+        uninstall) show_uninstall_help ;;
+        update)    show_update_help ;;
+        info)      show_info_help ;;
+        configure) show_configure_help ;;
+        gpu)       show_gpu_help ;;
+        setup)     show_setup_help ;;
+        cleanup)   show_cleanup_help ;;
+        *)         show_main_help ;;
     esac
     exit 0
 fi

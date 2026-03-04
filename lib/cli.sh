@@ -33,12 +33,13 @@ ctdev - Conner Technology Dev CLI
 Usage: ctdev [OPTIONS] COMMAND [ARGS]
 
 Commands:
-    components <subcommand>   Manage installable components
+    install <component...>    Install specific components
+    uninstall <component...>  Remove specific components
     update [OPTIONS]          Update system packages and components
     info                      Show system information
     configure git             Configure git user settings
     gpu <subcommand>          Manage GPU drivers and Secure Boot signing
-    setup                     Set up a fresh system (runs all steps)
+    setup                     Set up and configure your OS
     cleanup                   Clean up kernels and APT repos
 
 Options:
@@ -49,9 +50,8 @@ Options:
     --version        Show version information
 
 Examples:
-    ctdev components list                Show all components with status
-    ctdev components install zsh git     Install specific components
-    ctdev components uninstall ruby      Remove a component
+    ctdev install zsh git                Install specific components
+    ctdev uninstall ruby                 Remove a component
     ctdev update                         Update installed components
     ctdev update -y                      Update without prompting
     ctdev update --check                 List available updates
@@ -67,17 +67,14 @@ For help on a specific command:
 EOF
 }
 
-# Show help for components command
-show_components_help() {
+# Show help for install command
+show_install_help() {
     cat << 'EOF'
-ctdev components - Manage installable components
+ctdev install - Install specific components
 
-Usage: ctdev components <subcommand> [ARGS]
+Usage: ctdev install <COMPONENT...>
 
-Subcommands:
-    list                      List components with status
-    install <component...>    Install specific components
-    uninstall <component...>  Remove specific components
+Installs one or more components. At least one component must be specified.
 
 Options:
     -h, --help       Show this help message
@@ -86,10 +83,32 @@ Options:
     -f, --force      Re-run install scripts even if already installed
 
 Examples:
-    ctdev components list                Show all components with status
-    ctdev components install zsh git     Install specific components
-    ctdev components install --dry-run jq  Preview installation
-    ctdev components uninstall ruby      Remove Ruby/rbenv
+    ctdev install zsh          Install zsh configuration
+    ctdev install node ruby    Install multiple components
+    ctdev install --dry-run jq Preview installation
+
+To update installed components, use 'ctdev update'.
+EOF
+}
+
+# Show help for uninstall command
+show_uninstall_help() {
+    cat << 'EOF'
+ctdev uninstall - Remove specific components
+
+Usage: ctdev uninstall <COMPONENT...>
+
+Removes one or more installed components. At least one component must be specified.
+
+Options:
+    -h, --help       Show this help message
+    -v, --verbose    Enable verbose output
+    -n, --dry-run    Preview changes without applying
+
+Examples:
+    ctdev uninstall ruby       Remove Ruby/rbenv
+    ctdev uninstall node ruby  Remove multiple components
+    ctdev uninstall --dry-run jq Preview removal
 EOF
 }
 
@@ -293,7 +312,7 @@ parse_global_flags() {
 # Validate that a command exists
 require_command() {
     local cmd="$1"
-    local valid_commands="components update info configure gpu setup cleanup"
+    local valid_commands="install uninstall update info configure gpu setup cleanup"
 
     if [[ -z "$cmd" ]]; then
         return 1
