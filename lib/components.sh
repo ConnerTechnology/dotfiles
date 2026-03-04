@@ -42,7 +42,6 @@ declare -a COMPONENTS=(
     "sops:Mozilla SOPS secrets manager:components/sops/install.sh"
     "terraform:Terraform infrastructure tool:components/terraform/install.sh"
     "tmux:Terminal multiplexer:components/tmux/install.sh"
-    "tradingview:TradingView desktop:components/tradingview/install.sh"
     "vscode:Visual Studio Code:components/vscode/install.sh"
     "zsh:Zsh, Oh My Zsh, Pure prompt, plugins:components/zsh/install.sh"
 )
@@ -166,9 +165,6 @@ is_component_installed() {
             else
                 command -v slack >/dev/null 2>&1
             fi
-            ;;
-        tradingview)
-            [[ -d "/Applications/TradingView.app" ]]
             ;;
         vscode)
             if [[ "$(uname -s)" == "Darwin" ]]; then

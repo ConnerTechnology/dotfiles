@@ -26,9 +26,9 @@ ctdev cleanup apt               # Audit and clean APT repositories
 
 ## Components
 
-35 components (run `ctdev list` to see all):
+34 components (run `ctdev list` to see all):
 
-1password, age, bleachbit, btop, bun, chatgpt, chrome, cleanmymac, claude-code, claude-desktop, codex, dbeaver, docker, doctl, earlyoom, fonts, gh, ghostty, git, git-spice, helm, jq, kubectl, linear, logi-options, node, ruby, shellcheck, slack, sops, terraform, tmux, tradingview, vscode, zsh
+1password, age, bleachbit, btop, bun, chatgpt, chrome, cleanmymac, claude-code, claude-desktop, codex, dbeaver, docker, doctl, earlyoom, fonts, gh, ghostty, git, git-spice, helm, jq, kubectl, linear, logi-options, node, ruby, shellcheck, slack, sops, terraform, tmux, vscode, zsh
 
 ## Directory structure
 
