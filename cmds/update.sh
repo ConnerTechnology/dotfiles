@@ -38,14 +38,11 @@ git_repo_has_updates() {
     [[ "$behind" -gt 0 ]]
 }
 
-git_pull_default_branch() {
+git_pull_repo() {
     local repo_path="$1"
     local name="$2"
     [[ -d "$repo_path/.git" ]] || return 1
-    local default_branch
-    default_branch=$(git -C "$repo_path" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
-    [[ -z "$default_branch" ]] && default_branch="main"
-    git -C "$repo_path" pull origin "$default_branch" --ff-only 2>/dev/null || \
+    git -C "$repo_path" pull --ff-only 2>&1 || \
         log_warning "$name: Could not pull (may have local changes)"
 }
 
@@ -125,12 +122,12 @@ check_zsh_updates() {
 
 update_zsh() {
     is_component_installed "zsh" || return
-    [[ -d "$HOME/.oh-my-zsh/.git" ]] && git_pull_default_branch "$HOME/.oh-my-zsh" "Oh My Zsh"
+    [[ -d "$HOME/.oh-my-zsh/.git" ]] && git_pull_repo "$HOME/.oh-my-zsh" "Oh My Zsh"
     [[ -d "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions/.git" ]] && \
-        git_pull_default_branch "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions" "zsh-autosuggestions"
+        git_pull_repo "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions" "zsh-autosuggestions"
     [[ -d "$HOME/.oh-my-zsh/custom/plugins/zsh-completions/.git" ]] && \
-        git_pull_default_branch "$HOME/.oh-my-zsh/custom/plugins/zsh-completions" "zsh-completions"
-    [[ -d "$HOME/.zsh/pure/.git" ]] && git_pull_default_branch "$HOME/.zsh/pure" "Pure prompt"
+        git_pull_repo "$HOME/.oh-my-zsh/custom/plugins/zsh-completions" "zsh-completions"
+    [[ -d "$HOME/.zsh/pure/.git" ]] && git_pull_repo "$HOME/.zsh/pure" "Pure prompt"
 }
 
 check_node_updates() {
@@ -142,9 +139,9 @@ check_node_updates() {
 
 update_node() {
     is_component_installed "node" || return
-    [[ -d "$HOME/.nodenv/.git" ]] && git_pull_default_branch "$HOME/.nodenv" "nodenv"
+    [[ -d "$HOME/.nodenv/.git" ]] && git_pull_repo "$HOME/.nodenv" "nodenv"
     [[ -d "$HOME/.nodenv/plugins/node-build/.git" ]] && \
-        git_pull_default_branch "$HOME/.nodenv/plugins/node-build" "node-build"
+        git_pull_repo "$HOME/.nodenv/plugins/node-build" "node-build"
 }
 
 check_ruby_updates() {
@@ -156,9 +153,9 @@ check_ruby_updates() {
 
 update_ruby() {
     is_component_installed "ruby" || return
-    [[ -d "$HOME/.rbenv/.git" ]] && git_pull_default_branch "$HOME/.rbenv" "rbenv"
+    [[ -d "$HOME/.rbenv/.git" ]] && git_pull_repo "$HOME/.rbenv" "rbenv"
     [[ -d "$HOME/.rbenv/plugins/ruby-build/.git" ]] && \
-        git_pull_default_branch "$HOME/.rbenv/plugins/ruby-build" "ruby-build"
+        git_pull_repo "$HOME/.rbenv/plugins/ruby-build" "ruby-build"
     command -v gem >/dev/null 2>&1 && {
         gem update --system --silent 2>/dev/null || true
         gem update --silent 2>/dev/null || true
@@ -259,19 +256,32 @@ cmd_update() {
     fi
 
     # Check component-specific updates
+    local has_zsh_updates=false
+    local has_node_updates=false
+    local has_ruby_updates=false
     if check_zsh_updates; then
+        has_zsh_updates=true
         updates+=("zsh (oh-my-zsh, plugins, pure prompt)")
     fi
     if check_node_updates; then
+        has_node_updates=true
         updates+=("node (nodenv, node-build)")
     fi
     if check_ruby_updates; then
+        has_ruby_updates=true
         updates+=("ruby (rbenv, ruby-build, gems)")
     fi
 
-    # Bun: no reliable pre-check, always show if installed
-    if is_component_installed "bun"; then
-        updates+=("bun")
+    # Bun: compare local version to latest GitHub release
+    local has_bun_updates=false
+    if is_component_installed "bun" && command -v bun >/dev/null 2>&1; then
+        local bun_local bun_latest
+        bun_local=$(bun --version 2>/dev/null)
+        bun_latest=$(curl -s --max-time 5 https://api.github.com/repos/oven-sh/bun/releases/latest | grep -o '"tag_name": *"[^"]*"' | sed 's/.*"bun-v\(.*\)"/\1/')
+        if [[ -n "$bun_latest" ]] && [[ "$bun_local" != "$bun_latest" ]]; then
+            has_bun_updates=true
+            updates+=("bun ($bun_local → $bun_latest)")
+        fi
     fi
 
     # Check NVIDIA module signing
@@ -346,28 +356,28 @@ cmd_update() {
     fi
 
     # 4. Component updates
-    if check_zsh_updates 2>/dev/null; then
+    if [[ "$has_zsh_updates" == "true" ]]; then
         log_info "Updating zsh components..."
         update_zsh
         updated+=("zsh")
     fi
 
-    if check_node_updates 2>/dev/null; then
+    if [[ "$has_node_updates" == "true" ]]; then
         log_info "Updating node components..."
         update_node
         updated+=("node")
     fi
 
-    if check_ruby_updates 2>/dev/null; then
+    if [[ "$has_ruby_updates" == "true" ]]; then
         log_info "Updating ruby components..."
         update_ruby
         updated+=("ruby")
     fi
 
     # 5. Bun
-    if is_component_installed "bun"; then
+    if [[ "$has_bun_updates" == "true" ]]; then
         log_info "Updating bun..."
-        bun upgrade 2>/dev/null || log_warning "bun update failed"
+        bun upgrade || log_warning "bun update failed"
         updated+=("bun")
     fi
 

@@ -33,15 +33,13 @@ ctdev - Conner Technology Dev CLI
 Usage: ctdev [OPTIONS] COMMAND [ARGS]
 
 Commands:
-    install <component...>    Install specific components
-    uninstall <component...>  Remove specific components
+    components <subcommand>   Manage installable components
     update [OPTIONS]          Update system packages and components
-    list                      List components with status
     info                      Show system information
-    configure <target>        Configure git, macos, or linux-mint settings
+    configure git             Configure git user settings
     gpu <subcommand>          Manage GPU drivers and Secure Boot signing
     setup                     Set up a fresh system (runs all steps)
-    cleanup <subcommand>      Clean up kernels and APT repos
+    cleanup                   Clean up kernels and APT repos
 
 Options:
     -h, --help       Show this help message
@@ -51,33 +49,35 @@ Options:
     --version        Show version information
 
 Examples:
-    ctdev install zsh git                Install specific components
-    ctdev list                           Show all components with status
+    ctdev components list                Show all components with status
+    ctdev components install zsh git     Install specific components
+    ctdev components uninstall ruby      Remove a component
     ctdev update                         Update installed components
     ctdev update -y                      Update without prompting
     ctdev update --check                 List available updates
     ctdev update --refresh-keys          Refresh APT keys before updating
     ctdev configure git                  Configure git user
-    ctdev configure macos                Configure macOS settings
-    ctdev configure linux-mint           Configure Linux Mint settings
     ctdev setup                          Run full fresh-install setup
-    ctdev cleanup kernels                Remove old kernel versions
+    ctdev setup --show                   Show current system configuration
+    ctdev setup --reset                  Reset system configuration
+    ctdev cleanup                        Run all cleanup tasks
 
 For help on a specific command:
     ctdev COMMAND --help
 EOF
 }
 
-# Show help for install command
-show_install_help() {
+# Show help for components command
+show_components_help() {
     cat << 'EOF'
-ctdev install - Install specific components
+ctdev components - Manage installable components
 
-Usage: ctdev install <COMPONENT...>
+Usage: ctdev components <subcommand> [ARGS]
 
-Installs one or more components. At least one component must be specified.
-
-Use 'ctdev list' to see available components.
+Subcommands:
+    list                      List components with status
+    install <component...>    Install specific components
+    uninstall <component...>  Remove specific components
 
 Options:
     -h, --help       Show this help message
@@ -86,34 +86,10 @@ Options:
     -f, --force      Re-run install scripts even if already installed
 
 Examples:
-    ctdev install zsh          Install zsh configuration
-    ctdev install node ruby    Install multiple components
-    ctdev install --dry-run jq Preview installation
-
-To update installed components, use 'ctdev update'.
-EOF
-}
-
-# Show help for uninstall command
-show_uninstall_help() {
-    cat << 'EOF'
-ctdev uninstall - Remove specific components
-
-Usage: ctdev uninstall <COMPONENT...>
-
-Removes one or more installed components. At least one component must be specified.
-
-Use 'ctdev list' to see installed components.
-
-Options:
-    -h, --help       Show this help message
-    -v, --verbose    Enable verbose output
-    -n, --dry-run    Preview changes without applying
-
-Examples:
-    ctdev uninstall ruby       Remove Ruby/rbenv
-    ctdev uninstall node ruby  Remove multiple components
-    ctdev uninstall --dry-run jq Preview removal
+    ctdev components list                Show all components with status
+    ctdev components install zsh git     Install specific components
+    ctdev components install --dry-run jq  Preview installation
+    ctdev components uninstall ruby      Remove Ruby/rbenv
 EOF
 }
 
@@ -152,23 +128,6 @@ Examples:
 EOF
 }
 
-# Show help for list command
-show_list_help() {
-    cat << 'EOF'
-ctdev list - List available components with status
-
-Usage: ctdev list [OPTIONS]
-
-Shows all components with their installation status:
-- Green: installed
-- Yellow: installed (update available)
-- Grey: not installed
-
-Options:
-    -h, --help       Show this help message
-EOF
-}
-
 # Show help for info command
 show_info_help() {
     cat << 'EOF'
@@ -192,14 +151,9 @@ EOF
 # Show help for configure command
 show_configure_help() {
     cat << 'EOF'
-ctdev configure - Configure components
+ctdev configure - Configure git settings
 
-Usage: ctdev configure <TARGET> [OPTIONS]
-
-Targets:
-    git              Configure git user (name and email)
-    macos            Configure macOS system defaults
-    linux-mint       Configure Linux Mint system defaults
+Usage: ctdev configure git [OPTIONS]
 
 Git Options:
     --name NAME      Set git user.name
@@ -207,29 +161,17 @@ Git Options:
     --local          Configure for current repo only (not global)
     --show           Show current git configuration
 
-macOS Options:
-    --reset          Reset to macOS system defaults
-    --show           Show current macOS configuration
-
-Linux Mint Options:
-    --reset          Reset to Cinnamon system defaults
-    --show           Show current Linux Mint configuration
-
 General Options:
     -h, --help       Show this help message
     -n, --dry-run    Preview changes without applying
+
+For OS configuration (macOS/Linux Mint), use 'ctdev setup'.
 
 Examples:
     ctdev configure git                       Interactive git configuration (global)
     ctdev configure git --show                Show current git configuration
     ctdev configure git --local               Configure git for current repo only
     ctdev configure git --name "Name" --email "email@example.com"
-    ctdev configure macos                     Apply macOS preferences
-    ctdev configure macos --show              Show current macOS configuration
-    ctdev configure macos --reset             Reset to Apple defaults
-    ctdev configure linux-mint                Apply Linux Mint preferences
-    ctdev configure linux-mint --show         Show current Linux Mint configuration
-    ctdev configure linux-mint --reset        Reset to Cinnamon defaults
 EOF
 }
 
@@ -271,10 +213,10 @@ Runs all setup steps in the correct order for the current OS.
 Options:
     -h, --help           Show this help message
     -n, --dry-run        Preview changes without applying
-    --skip-update        Skip system update step
+    --show               Show current system configuration
+    --reset              Reset system configuration to defaults
     --skip-gpu           Skip GPU setup step
     --skip-configure     Skip system configuration step
-    --skip-cleanup       Skip cleanup steps
 
 Run 'ctdev setup --help' for full details.
 EOF
@@ -285,11 +227,9 @@ show_cleanup_help() {
     cat << 'EOF'
 ctdev cleanup - Clean up system resources
 
-Usage: ctdev cleanup <subcommand> [OPTIONS]
+Usage: ctdev cleanup [OPTIONS]
 
-Subcommands:
-    kernels   Remove old kernel versions
-    apt       Audit and clean APT repositories
+Runs all cleanup tasks with prompts. Use --force or --dry-run to skip prompts.
 
 Run 'ctdev cleanup --help' for full details.
 EOF
@@ -353,7 +293,7 @@ parse_global_flags() {
 # Validate that a command exists
 require_command() {
     local cmd="$1"
-    local valid_commands="install uninstall update list info configure gpu setup cleanup"
+    local valid_commands="components update info configure gpu setup cleanup"
 
     if [[ -z "$cmd" ]]; then
         return 1

@@ -139,18 +139,5 @@ cmd_info() {
         echo "  Disk (/):        $disk_used / $disk_total ($disk_percent used)"
     fi
 
-    # Recommended Chrome Web Apps (Linux only, Chrome installed)
-    if [[ "$OSTYPE" != "darwin"* ]] && command -v google-chrome >/dev/null 2>&1; then
-        echo
-        log_step "Recommended Chrome Web Apps"
-        echo
-        echo "  Install as web apps via chrome://apps/ or the browser menu"
-        echo "  (three dots → Cast, save, and share → Install page as app)"
-        echo
-        echo "  - TradingView        https://www.tradingview.com"
-        echo "  - ChatGPT            https://chatgpt.com"
-        echo
-    fi
-
     echo
 }

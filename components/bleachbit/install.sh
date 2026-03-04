@@ -10,7 +10,7 @@ OS=$(detect_os)
 
 if [[ "$OS" == "macos" ]]; then
   log_warning "BleachBit installation not supported on $OS"
-  log_info "For macOS, run: ctdev install cleanmymac"
+  log_info "For macOS, run: ctdev components install cleanmymac"
   exit 2
 fi
 

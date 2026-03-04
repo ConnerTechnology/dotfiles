@@ -13,11 +13,14 @@ show_cleanup_help() {
     cat << 'EOF'
 ctdev cleanup - Clean up system resources
 
-Usage: ctdev cleanup <subcommand> [OPTIONS]
+Usage: ctdev cleanup [OPTIONS]
 
-Subcommands:
-    kernels   Remove old kernel versions (keep current + one previous)
-    apt       Audit and clean APT repositories (interactive)
+Runs all cleanup tasks sequentially, prompting before each one.
+Use --force or --dry-run to skip prompts.
+
+Tasks (Linux only):
+    1. Remove old kernel versions (keep current + one previous)
+    2. Audit and clean APT repositories (interactive)
 
 Options:
     -h, --help       Show this help message
@@ -26,14 +29,14 @@ Options:
     -f, --force      Skip confirmation prompts
 
 Examples:
-    ctdev cleanup kernels             Remove old kernels
-    ctdev cleanup kernels --dry-run   Preview kernel cleanup
-    ctdev cleanup apt                 Interactive APT repo audit
+    ctdev cleanup             Run all cleanup tasks (with prompts)
+    ctdev cleanup --dry-run   Preview all cleanup tasks
+    ctdev cleanup --force     Run all cleanup tasks without prompts
 EOF
 }
 
 ###############################################################################
-# Subcommand: kernels
+# Task: kernels
 ###############################################################################
 
 cleanup_kernels() {
@@ -205,7 +208,7 @@ cleanup_kernels() {
 }
 
 ###############################################################################
-# Subcommand: apt
+# Task: apt
 ###############################################################################
 
 cleanup_apt() {
@@ -297,35 +300,50 @@ cleanup_apt() {
 }
 
 ###############################################################################
-# Main command dispatcher
+# Main command
 ###############################################################################
 
 cmd_cleanup() {
-    local subcommand="${1:-}"
+    # Check for help
+    for arg in "$@"; do
+        case "$arg" in
+            -h|--help)
+                show_cleanup_help
+                return 0
+                ;;
+        esac
+    done
 
-    if [[ -z "$subcommand" ]]; then
-        show_cleanup_help
+    if [[ "$OS" == "macos" ]]; then
+        log_info "No cleanup tasks available on macOS"
         return 0
     fi
 
-    shift
-
-    case "$subcommand" in
-        -h|--help)
-            show_cleanup_help
-            return 0
-            ;;
-        kernels)
+    # Run all tasks sequentially with prompts
+    # Kernel cleanup
+    if [[ "${FORCE:-false}" == "true" || "${DRY_RUN:-false}" == "true" ]]; then
+        cleanup_kernels
+    else
+        printf "Clean up old kernels? [y/N] "
+        read -r answer
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
             cleanup_kernels
-            ;;
-        apt)
+        else
+            log_info "Skipping kernel cleanup"
+        fi
+    fi
+    echo
+
+    # APT cleanup
+    if [[ "${FORCE:-false}" == "true" || "${DRY_RUN:-false}" == "true" ]]; then
+        cleanup_apt
+    else
+        printf "Audit APT repositories? [y/N] "
+        read -r answer
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
             cleanup_apt
-            ;;
-        *)
-            log_error "Unknown subcommand: $subcommand"
-            echo
-            show_cleanup_help
-            return 1
-            ;;
-    esac
+        else
+            log_info "Skipping APT cleanup"
+        fi
+    fi
 }

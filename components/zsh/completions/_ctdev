@@ -26,12 +26,20 @@ _ctdev_components() {
     _describe -t components 'component' components
 }
 
+_ctdev_components_subcommands() {
+    local -a subcommands
+    subcommands=(
+        'list:List components with status'
+        'install:Install specific components'
+        'uninstall:Remove specific components'
+    )
+    _describe -t subcommands 'subcommand' subcommands
+}
+
 _ctdev_configure_targets() {
     local -a targets
     targets=(
         'git:Configure git user (name and email)'
-        'macos:Configure macOS system defaults'
-        'linux-mint:Configure Linux Mint system defaults'
     )
     _describe -t targets 'target' targets
 }
@@ -45,24 +53,10 @@ _ctdev_configure_git_opts() {
         '(-h --help)'{-h,--help}'[Show help]'
 }
 
-_ctdev_configure_macos_opts() {
-    _arguments -s \
-        '--reset[Reset to macOS system defaults]' \
-        '--show[Show current macOS configuration]' \
-        '(-h --help)'{-h,--help}'[Show help]'
-}
-
-_ctdev_configure_linux_mint_opts() {
-    _arguments -s \
-        '--reset[Reset to Cinnamon system defaults]' \
-        '--show[Show current Linux Mint configuration]' \
-        '(-h --help)'{-h,--help}'[Show help]'
-}
-
 _ctdev_gpu_subcommands() {
     local -a subcommands
     subcommands=(
-        'status:Check secure boot and driver signing status'
+        'info:Show GPU hardware info and signing status'
         'setup:Configure MOK signing for NVIDIA drivers'
     )
     _describe -t subcommands 'subcommand' subcommands
@@ -80,13 +74,13 @@ _ctdev() {
 
     local -a commands
     commands=(
-        'install:Install specific components'
-        'uninstall:Remove specific components'
+        'components:Manage installable components'
         'update:Update system packages and components'
-        'list:List components with status'
         'info:Show system information'
-        'configure:Configure git, macOS, or Linux Mint settings'
+        'configure:Configure git settings'
         'gpu:Manage GPU driver signing for Secure Boot'
+        'setup:Set up a fresh system'
+        'cleanup:Clean up kernels and APT repos'
     )
 
     _arguments -s \
@@ -100,10 +94,18 @@ _ctdev() {
             ;;
         args)
             case "${words[1]}" in
-                install|uninstall)
-                    _arguments -s \
-                        "${global_flags[@]}" \
-                        '*:component:_ctdev_components'
+                components)
+                    local comp_sub="${words[2]}"
+                    case "$comp_sub" in
+                        install|uninstall)
+                            _arguments -s \
+                                "${global_flags[@]}" \
+                                '*:component:_ctdev_components'
+                            ;;
+                        *)
+                            _ctdev_components_subcommands
+                            ;;
+                    esac
                     ;;
                 update)
                     _arguments -s \
@@ -116,15 +118,13 @@ _ctdev() {
                     local target="${words[2]}"
                     case "$target" in
                         git) _ctdev_configure_git_opts ;;
-                        macos) _ctdev_configure_macos_opts ;;
-                        linux-mint) _ctdev_configure_linux_mint_opts ;;
                         *) _ctdev_configure_targets ;;
                     esac
                     ;;
                 gpu)
                     local gpu_sub="${words[2]}"
                     case "$gpu_sub" in
-                        status)
+                        info)
                             _arguments -s \
                                 '(-h --help)'{-h,--help}'[Show help]' \
                                 '(-v --verbose)'{-v,--verbose}'[Enable verbose output]'
@@ -142,7 +142,18 @@ _ctdev() {
                             ;;
                     esac
                     ;;
-                list|info)
+                setup)
+                    _arguments -s \
+                        "${global_flags[@]}" \
+                        '--show[Show current system configuration]' \
+                        '--reset[Reset system configuration to defaults]' \
+                        '--skip-gpu[Skip GPU setup step]' \
+                        '--skip-configure[Skip system configuration step]'
+                    ;;
+                cleanup)
+                    _arguments -s "${global_flags[@]}"
+                    ;;
+                info)
                     _arguments -s "${global_flags[@]}"
                     ;;
             esac

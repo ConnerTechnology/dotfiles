@@ -20,26 +20,28 @@ git clone https://github.com/ConnerTechnology/dotfiles.git ~/dotfiles
 ## ctdev CLI
 
 ```bash
-ctdev install <component...>    # Install specific components
-ctdev uninstall <component...>  # Remove specific components
-ctdev update [-y]               # Update system packages and components
-ctdev update --check            # List available updates without installing
-ctdev update --refresh-keys     # Refresh APT GPG keys before updating
-ctdev list                      # List components with status
-ctdev info                      # Show system information
-ctdev configure git             # Configure git user
-ctdev configure macos           # Configure macOS defaults
-ctdev configure linux-mint      # Configure Linux Mint defaults
+ctdev components list                  # List components with status
+ctdev components install <component>   # Install specific components
+ctdev components uninstall <component> # Remove specific components
+ctdev update [-y]                      # Update system packages and components
+ctdev update --check                   # List available updates without installing
+ctdev update --refresh-keys            # Refresh APT GPG keys before updating
+ctdev info                             # Show system information
+ctdev configure git                    # Configure git user
+ctdev gpu info                         # Show GPU hardware info and signing status
+ctdev gpu setup                        # Configure MOK signing for NVIDIA drivers
+ctdev setup                            # Run full fresh-install setup
+ctdev cleanup                          # Run all cleanup tasks
 ```
 
 **Flags:** `--help`, `--dry-run`, `--verbose`, `--force`, `--version`
 
 ## Components
 
-35 components available. Run `ctdev list` to see all with status.
+34 components available. Run `ctdev components list` to see all with status.
 
 **Desktop Applications:**
-1password, chatgpt, chrome, cleanmymac, claude-desktop, dbeaver, ghostty, linear, logi-options, slack, tradingview, vscode
+1password, chatgpt, chrome, cleanmymac, claude-desktop, dbeaver, ghostty, linear, logi-options, slack, vscode
 
 **CLI Tools:**
 age, bleachbit, btop, bun, claude-code, codex, docker, doctl, earlyoom, gh, git-spice, helm, jq, kubectl, shellcheck, sops, terraform, tmux
@@ -52,18 +54,16 @@ Components are defined in `lib/components.sh`. Each component has an `install.sh
 ## Examples
 
 ```bash
-ctdev install zsh git            # Install shell and git config
-ctdev install node bun           # Install Node.js and Bun
-ctdev list                       # Show all components with status
-ctdev update                     # Update all installed components
-ctdev update -y                  # Update without prompting
-ctdev configure git              # Configure git user (global)
-ctdev configure git --local      # Configure git for current repo
-ctdev configure macos            # Configure macOS defaults
-ctdev configure macos --show     # Show current macOS settings
-ctdev configure macos --reset    # Reset macOS defaults
-ctdev configure linux-mint       # Configure Linux Mint + NVIDIA suspend
-ctdev configure linux-mint --show # Show current Linux Mint settings
+ctdev components install zsh git     # Install shell and git config
+ctdev components install node bun    # Install Node.js and Bun
+ctdev components list                # Show all components with status
+ctdev update                         # Update all installed components
+ctdev update -y                      # Update without prompting
+ctdev configure git                  # Configure git user (global)
+ctdev configure git --local          # Configure git for current repo
+ctdev setup                          # Run full fresh-install setup
+ctdev setup --show                   # Show current system configuration
+ctdev cleanup                        # Run all cleanup tasks
 ```
 
 ## DevContainers
@@ -107,7 +107,7 @@ dotfiles/
 
 ```bash
 ~/dotfiles/uninstall.sh          # Remove ctdev CLI
-ctdev uninstall <component...>   # Remove specific components first
+ctdev components uninstall <component...>   # Remove specific components first
 ```
 
 The uninstall script removes the ctdev symlink and config directory. The dotfiles repo remains at `~/dotfiles` - delete it manually if desired.

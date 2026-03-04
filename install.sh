@@ -74,8 +74,8 @@ success "ctdev is now installed!"
 echo
 echo "  Next steps:"
 echo "    1. Restart your terminal (or add ~/.local/bin to PATH)"
-echo "    2. Run: ctdev install zsh git   # Install shell config"
-echo "    3. Run: ctdev list              # See all components"
+echo "    2. Run: ctdev components install zsh git  # Install shell config"
+echo "    3. Run: ctdev components list             # See all components"
 echo
 echo "  Run 'ctdev --help' for more options."
 echo

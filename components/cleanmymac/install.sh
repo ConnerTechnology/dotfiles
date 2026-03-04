@@ -10,7 +10,7 @@ OS=$(detect_os)
 
 if [[ "$OS" != "macos" ]]; then
   log_warning "CleanMyMac installation not supported on $OS"
-  log_info "For Linux, run: ctdev install bleachbit"
+  log_info "For Linux, run: ctdev components install bleachbit"
   exit 2
 fi
 

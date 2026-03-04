@@ -37,9 +37,9 @@ if [[ -t 0 ]]; then
     printf "Uninstall all components first? [y/N] "
     if read -r answer && [[ "$answer" =~ ^[Yy]$ ]]; then
         if [[ -x "$SCRIPT_DIR/ctdev" ]]; then
-            "$SCRIPT_DIR/ctdev" uninstall
+            "$SCRIPT_DIR/ctdev" components uninstall
         else
-            warn "Could not run ctdev uninstall (ctdev not executable)"
+            warn "Could not run ctdev components uninstall (ctdev not executable)"
         fi
     fi
 fi

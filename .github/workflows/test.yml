@@ -61,13 +61,13 @@ jobs:
         run: ./ctdev --version
 
       - name: Test list command
-        run: ./ctdev list
+        run: ./ctdev components list
 
       - name: Test info command
         run: ./ctdev info
 
       - name: Test dry-run install
-        run: ./ctdev --dry-run install jq
+        run: ./ctdev --dry-run components install jq
 
   test-ubuntu:
     name: Test on Ubuntu ${{ matrix.ubuntu-version }}
@@ -93,7 +93,7 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Install zsh component
-        run: ./ctdev install zsh
+        run: ./ctdev components install zsh
 
       - name: Verify zsh installation
         run: |
@@ -117,7 +117,7 @@ jobs:
           git config --global user.email | grep -q "ci@test.com" || exit 1
 
       - name: Install jq component
-        run: ./ctdev install jq
+        run: ./ctdev components install jq
 
       - name: Verify jq installation
         run: command -v jq || exit 1
@@ -136,14 +136,14 @@ jobs:
       - name: Test CLI commands
         run: |
           ./ctdev --version
-          ./ctdev list
+          ./ctdev components list
           ./ctdev info
 
       - name: Test dry-run install
-        run: ./ctdev --dry-run install jq
+        run: ./ctdev --dry-run components install jq
 
       - name: Install zsh component
-        run: ./ctdev install zsh
+        run: ./ctdev components install zsh
 
       - name: Verify zsh installation
         run: |
