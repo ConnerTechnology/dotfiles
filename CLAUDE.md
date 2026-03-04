@@ -17,7 +17,9 @@ ctdev configure macos           # Configure macOS defaults (macOS only)
 ctdev configure linux-mint      # Configure Linux Mint defaults (Linux Mint only)
 ctdev gpu info                  # Show GPU hardware info and signing status
 ctdev gpu setup                 # Configure MOK signing for NVIDIA drivers
-ctdev gpu sign                  # Sign current NVIDIA kernel modules
+ctdev setup                     # Run full fresh-install setup
+ctdev cleanup kernels           # Remove old kernel versions
+ctdev cleanup apt               # Audit and clean APT repositories
 ```
 
 **Flags:** `--help`, `--verbose`, `--dry-run`, `--force`, `--version`, `--refresh-keys`
