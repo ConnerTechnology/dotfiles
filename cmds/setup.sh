@@ -485,35 +485,6 @@ linux_mint_show() {
     printf "  %-40s %s\n" "PipeWire libcamera plugin:" "$libcamera_spa"
     echo ""
 
-    echo "Swap:"
-    local swap_total
-    swap_total=$(swapon --show --noheadings --bytes 2>/dev/null | awk '{sum+=$3} END {if(sum>0) printf "%.1f GB", sum/1073741824; else print "none"}')
-    printf "  %-40s %s\n" "Total swap:" "$swap_total"
-    if [[ -f /swapfile ]]; then
-        local swapfile_size
-        swapfile_size=$(stat -c%s /swapfile 2>/dev/null | awk '{printf "%.0f GB", $1/1073741824}')
-        printf "  %-40s %s\n" "Swap file (/swapfile):" "$swapfile_size"
-    else
-        printf "  %-40s %s\n" "Swap file (/swapfile):" "not configured"
-    fi
-    if grep -q '/swapfile' /etc/fstab 2>/dev/null; then
-        printf "  %-40s %s\n" "Swap file in fstab:" "yes"
-    else
-        printf "  %-40s %s\n" "Swap file in fstab:" "no"
-    fi
-    echo ""
-
-    echo "Memory:"
-    local swappiness
-    swappiness=$(sysctl -n vm.swappiness 2>/dev/null || echo "<unavailable>")
-    printf "  %-40s %s\n" "vm.swappiness:" "$swappiness"
-    if [[ -f /etc/sysctl.d/99-ctdev-swappiness.conf ]]; then
-        printf "  %-40s %s\n" "ctdev swappiness config:" "installed"
-    else
-        printf "  %-40s %s\n" "ctdev swappiness config:" "not installed"
-    fi
-    echo ""
-
     if lsmod | grep -q "^nvidia "; then
         echo "NVIDIA Suspend:"
         local cmdline
@@ -570,8 +541,6 @@ linux_mint_apply() {
         log_info "[DRY-RUN] Would configure Mouse settings (acceleration, speed, natural scroll)"
         log_info "[DRY-RUN] Would configure Sound settings (disable event sounds)"
         log_info "[DRY-RUN] Would configure Nemo settings (list view)"
-        log_info "[DRY-RUN] Would create 8GB swap file at /swapfile"
-        log_info "[DRY-RUN] Would set vm.swappiness to 10"
         log_info "[DRY-RUN] Would configure GRUB (timeout=0, hidden, os-prober disabled)"
         if lsmod | grep -q "^nvidia "; then
             log_info "[DRY-RUN] Would configure NVIDIA suspend (GRUB parameters, systemd services)"
@@ -631,32 +600,6 @@ linux_mint_apply() {
     # Nemo Settings
     log_info "Configuring Nemo..."
     dconf write /org/nemo/preferences/default-folder-viewer "'list-view'"
-
-    # Swap file - add a 8GB swap file for extra headroom
-    log_info "Configuring swap..."
-    if [[ ! -f /swapfile ]]; then
-        log_info "Creating 8GB swap file..."
-        maybe_sudo fallocate -l 8G /swapfile
-        maybe_sudo chmod 600 /swapfile
-        maybe_sudo mkswap /swapfile
-        maybe_sudo swapon /swapfile
-        if ! grep -q '/swapfile' /etc/fstab; then
-            echo '/swapfile none swap sw 0 0' | maybe_sudo tee -a /etc/fstab >/dev/null
-        fi
-        log_success "8GB swap file created and activated"
-    else
-        log_info "Swap file already exists"
-        if ! swapon --show | grep -q '/swapfile'; then
-            maybe_sudo swapon /swapfile
-        fi
-    fi
-
-    # Swappiness - prefer RAM over swap on high-memory desktops
-    log_info "Configuring vm.swappiness..."
-    local sysctl_file="/etc/sysctl.d/99-ctdev-swappiness.conf"
-    echo "vm.swappiness=10" | maybe_sudo tee "$sysctl_file" > /dev/null
-    maybe_sudo sysctl -p "$sysctl_file" > /dev/null 2>&1 || true
-    log_success "vm.swappiness set to 10"
 
     # GRUB Configuration
     log_info "Configuring GRUB..."
@@ -757,8 +700,7 @@ linux_mint_reset() {
     log_step "Resetting Linux Mint System Defaults"
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "[DRY-RUN] Would reset Power, Screensaver, Keyboard, Mouse, Sound, Nemo, Swap settings"
-        log_info "[DRY-RUN] Would reset vm.swappiness to default"
+        log_info "[DRY-RUN] Would reset Power, Screensaver, Keyboard, Mouse, Sound, Nemo settings"
         log_info "[DRY-RUN] Would reset GRUB settings (timeout=10, menu, os-prober enabled)"
         if lsmod | grep -q "^nvidia "; then
             log_info "[DRY-RUN] Would reset NVIDIA suspend settings (GRUB parameters, systemd services)"
@@ -796,23 +738,6 @@ linux_mint_reset() {
 
     log_info "Resetting Nemo settings..."
     dconf reset /org/nemo/preferences/default-folder-viewer
-
-    log_info "Resetting Swap settings..."
-    if swapon --show | grep -q '/swapfile'; then
-        maybe_sudo swapoff /swapfile || true
-    fi
-    if [[ -f /swapfile ]]; then
-        maybe_sudo rm /swapfile
-    fi
-    if grep -q '/swapfile' /etc/fstab 2>/dev/null; then
-        maybe_sudo sed -i '\|/swapfile|d' /etc/fstab
-    fi
-
-    log_info "Resetting vm.swappiness..."
-    if [[ -f /etc/sysctl.d/99-ctdev-swappiness.conf ]]; then
-        maybe_sudo rm /etc/sysctl.d/99-ctdev-swappiness.conf
-        maybe_sudo sysctl -w vm.swappiness=60 > /dev/null 2>&1 || true
-    fi
 
     log_info "Removing WirePlumber LDAC config..."
     if [[ -f /etc/wireplumber/wireplumber.conf.d/51-ldac-hq.conf ]]; then
