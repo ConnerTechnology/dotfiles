@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [8.2.0] - 2026-03-05
+
+### Removed
+- Swapfile creation and `vm.swappiness` tuning from `ctdev setup` (not needed for Linux Mint)
+
 ## [8.1.0] - 2026-03-05
 
 ### Added
