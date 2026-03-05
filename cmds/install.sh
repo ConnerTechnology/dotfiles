@@ -19,18 +19,39 @@ cmd_install() {
         esac
     done
 
+    # Handle 'ctdev install list'
+    if [[ ${#components[@]} -eq 1 && "${components[0]}" == "list" ]]; then
+        echo ""
+        log_step "Components"
+        echo ""
+        list_components | while read -r name; do
+            # Skip components not supported on this OS
+            if ! is_component_supported "$name"; then
+                continue
+            fi
+            local desc status status_color
+            desc=$(get_component_description "$name")
+            if is_component_installed "$name"; then
+                status="installed"
+                status_color="${GREEN:-}${status}${NC:-}"
+            else
+                status="not installed"
+                status_color="${YELLOW:-}${status}${NC:-}"
+            fi
+            printf "  %-20s %-16b %s\n" "$name" "$status_color" "$desc"
+        done
+        echo ""
+        return 0
+    fi
+
     # Require at least one component
     if [[ ${#components[@]} -eq 0 ]]; then
         log_error "No components specified"
         echo ""
         echo "Usage: ctdev install <component...>"
+        echo "       ctdev install list              List all components"
         echo ""
-        echo "Available components:"
-        list_components | while read -r name; do
-            local desc
-            desc=$(get_component_description "$name")
-            printf "  %-20s %s\n" "$name" "$desc"
-        done
+        echo "Run 'ctdev install list' to see available components."
         return 1
     fi
 

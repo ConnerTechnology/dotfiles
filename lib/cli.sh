@@ -73,6 +73,7 @@ show_install_help() {
 ctdev install - Install specific components
 
 Usage: ctdev install <COMPONENT...>
+       ctdev install list
 
 Installs one or more components. At least one component must be specified.
 
@@ -83,6 +84,7 @@ Options:
     -f, --force      Re-run install scripts even if already installed
 
 Examples:
+    ctdev install list         List all components and their status
     ctdev install zsh          Install zsh configuration
     ctdev install node ruby    Install multiple components
     ctdev install --dry-run jq Preview installation

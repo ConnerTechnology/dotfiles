@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [8.1.0] - 2026-03-05
+
+### Added
+- Bluetooth/audio/camera support in `ctdev setup` (LDAC, PipeWire Bluetooth, v4l-utils, linux-firmware)
+- WirePlumber LDAC Bluetooth audio config deployed from repo template
+- Bluetooth service enablement in `ctdev setup`
+- `vm.swappiness=10` tuning for high-memory desktops
+- `ctdev install list` to show available components with install status (filtered by OS)
+- New component: `solaar` (Logitech Unifying/Bolt receiver manager, Linux-only)
+- New component: `tailscale` (Tailscale VPN, macOS + Linux)
+- Bluetooth & audio status in `ctdev setup --show`
+
+### Changed
+- Simplified README to focus on getting started and commands
+- `ctdev setup --reset` now removes WirePlumber config and swappiness tuning
+
 ## [8.0.0] - 2026-03-04
 
 ### Breaking Changes
