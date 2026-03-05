@@ -39,7 +39,9 @@ declare -a COMPONENTS=(
     "ruby:Ruby via rbenv:components/ruby/install.sh"
     "shellcheck:Shell script linter:components/shellcheck/install.sh"
     "slack:Slack messaging:components/slack/install.sh"
+    "solaar:Logitech Unifying/Bolt receiver manager:components/solaar/install.sh"
     "sops:Mozilla SOPS secrets manager:components/sops/install.sh"
+    "tailscale:Tailscale VPN:components/tailscale/install.sh"
     "terraform:Terraform infrastructure tool:components/terraform/install.sh"
     "tmux:Terminal multiplexer:components/tmux/install.sh"
     "vscode:Visual Studio Code:components/vscode/install.sh"
@@ -214,8 +216,14 @@ is_component_installed() {
         shellcheck)
             command -v shellcheck >/dev/null 2>&1
             ;;
+        solaar)
+            command -v solaar >/dev/null 2>&1
+            ;;
         sops)
             command -v sops >/dev/null 2>&1
+            ;;
+        tailscale)
+            command -v tailscale >/dev/null 2>&1
             ;;
         terraform)
             command -v terraform >/dev/null 2>&1
@@ -310,7 +318,7 @@ is_component_supported() {
             [[ "$os" == "Darwin" ]]
             ;;
         # Linux only
-        bleachbit|earlyoom)
+        bleachbit|earlyoom|solaar)
             [[ "$os" == "Linux" ]]
             ;;
         # macOS only (no Linux desktop app)

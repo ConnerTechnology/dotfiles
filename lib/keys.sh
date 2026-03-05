@@ -12,6 +12,7 @@ APT_KEY_REGISTRY=(
     "terraform|https://apt.releases.hashicorp.com/gpg|/usr/share/keyrings/hashicorp-archive-keyring.gpg|dearmor"
     "vscode|https://packages.microsoft.com/keys/microsoft.asc|/etc/apt/trusted.gpg.d/packages.microsoft.gpg|dearmor"
     "dbeaver|https://dbeaver.io/debs/dbeaver.gpg.key|/etc/apt/trusted.gpg.d/dbeaver.gpg|dearmor"
+    "tailscale|https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg|/usr/share/keyrings/tailscale-archive-keyring.gpg|raw"
 )
 
 # Refresh a single apt GPG key.

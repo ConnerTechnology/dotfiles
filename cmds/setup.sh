@@ -18,7 +18,8 @@ Runs all setup steps in the correct order for the current OS.
 
 Linux Mint steps:
     1. GPU driver signing setup (NVIDIA + Secure Boot)
-    2. System configuration (GRUB, services, desktop settings)
+    2. System configuration (GRUB, services, desktop settings,
+       Bluetooth/audio/camera packages, WirePlumber LDAC config)
 
 macOS steps:
     1. System configuration (defaults)
@@ -458,6 +459,32 @@ linux_mint_show() {
     show_dconf "/org/nemo/preferences/default-folder-viewer" "Default view"
     echo ""
 
+    echo "Bluetooth & Audio:"
+    local bt_state
+    bt_state=$(systemctl is-enabled bluetooth.service 2>/dev/null || echo "not found")
+    printf "  %-40s %s\n" "bluetooth.service:" "$bt_state"
+    if [[ -f /etc/wireplumber/wireplumber.conf.d/51-ldac-hq.conf ]]; then
+        printf "  %-40s %s\n" "WirePlumber LDAC config:" "installed"
+    else
+        printf "  %-40s %s\n" "WirePlumber LDAC config:" "not installed"
+    fi
+    local ldac_installed="no"
+    dpkg -s libldacbt-enc2 &>/dev/null && ldac_installed="yes"
+    printf "  %-40s %s\n" "LDAC libraries:" "$ldac_installed"
+    local bt_spa="no"
+    dpkg -s libspa-0.2-bluetooth &>/dev/null && bt_spa="yes"
+    printf "  %-40s %s\n" "PipeWire Bluetooth plugin:" "$bt_spa"
+    echo ""
+
+    echo "Camera:"
+    local v4l_installed="no"
+    command -v v4l2-ctl &>/dev/null && v4l_installed="yes"
+    printf "  %-40s %s\n" "v4l-utils:" "$v4l_installed"
+    local libcamera_spa="no"
+    dpkg -s libspa-0.2-libcamera &>/dev/null && libcamera_spa="yes"
+    printf "  %-40s %s\n" "PipeWire libcamera plugin:" "$libcamera_spa"
+    echo ""
+
     echo "Swap:"
     local swap_total
     swap_total=$(swapon --show --noheadings --bytes 2>/dev/null | awk '{sum+=$3} END {if(sum>0) printf "%.1f GB", sum/1073741824; else print "none"}')
@@ -473,6 +500,17 @@ linux_mint_show() {
         printf "  %-40s %s\n" "Swap file in fstab:" "yes"
     else
         printf "  %-40s %s\n" "Swap file in fstab:" "no"
+    fi
+    echo ""
+
+    echo "Memory:"
+    local swappiness
+    swappiness=$(sysctl -n vm.swappiness 2>/dev/null || echo "<unavailable>")
+    printf "  %-40s %s\n" "vm.swappiness:" "$swappiness"
+    if [[ -f /etc/sysctl.d/99-ctdev-swappiness.conf ]]; then
+        printf "  %-40s %s\n" "ctdev swappiness config:" "installed"
+    else
+        printf "  %-40s %s\n" "ctdev swappiness config:" "not installed"
     fi
     echo ""
 
@@ -525,6 +563,7 @@ linux_mint_apply() {
     log_step "Configuring Linux Mint System Defaults"
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "[DRY-RUN] Would install Bluetooth/audio/camera packages"
         log_info "[DRY-RUN] Would configure Power settings (performance profile, sleep timers)"
         log_info "[DRY-RUN] Would configure Screensaver settings (idle delay, lock)"
         log_info "[DRY-RUN] Would configure Keyboard settings (repeat rate, numlock)"
@@ -532,14 +571,32 @@ linux_mint_apply() {
         log_info "[DRY-RUN] Would configure Sound settings (disable event sounds)"
         log_info "[DRY-RUN] Would configure Nemo settings (list view)"
         log_info "[DRY-RUN] Would create 8GB swap file at /swapfile"
+        log_info "[DRY-RUN] Would set vm.swappiness to 10"
         log_info "[DRY-RUN] Would configure GRUB (timeout=0, hidden, os-prober disabled)"
         if lsmod | grep -q "^nvidia "; then
             log_info "[DRY-RUN] Would configure NVIDIA suspend (GRUB parameters, systemd services)"
         fi
         log_info "[DRY-RUN] Would enable fstrim.timer for SSD TRIM"
+        log_info "[DRY-RUN] Would enable bluetooth.service"
+        log_info "[DRY-RUN] Would deploy WirePlumber LDAC Bluetooth config"
         log_success "Linux Mint defaults would be configured"
         return 0
     fi
+
+    # Bluetooth, audio, and camera packages
+    log_info "Installing Bluetooth/audio/camera packages..."
+    local bt_audio_packages=(
+        libspa-0.2-bluetooth  # PipeWire Bluetooth SPA plugin (LDAC, SBC, AAC codecs)
+        libldacbt-abr2         # LDAC adaptive bitrate library
+        libldacbt-enc2         # LDAC encoder library
+        libspa-0.2-libcamera   # libcamera SPA plugin for PipeWire
+        v4l-utils              # Video4Linux utilities (camera diagnostics)
+        linux-firmware         # WiFi/Bluetooth firmware (MediaTek MT7925, etc.)
+    )
+    # Single apt update, then install all packages at once
+    maybe_sudo apt-get update -qq
+    maybe_sudo apt-get install -y -qq "${bt_audio_packages[@]}"
+    log_success "Bluetooth/audio/camera packages installed"
 
     # Power Settings
     log_info "Configuring Power..."
@@ -594,6 +651,13 @@ linux_mint_apply() {
         fi
     fi
 
+    # Swappiness - prefer RAM over swap on high-memory desktops
+    log_info "Configuring vm.swappiness..."
+    local sysctl_file="/etc/sysctl.d/99-ctdev-swappiness.conf"
+    echo "vm.swappiness=10" | maybe_sudo tee "$sysctl_file" > /dev/null
+    maybe_sudo sysctl -p "$sysctl_file" > /dev/null 2>&1 || true
+    log_success "vm.swappiness set to 10"
+
     # GRUB Configuration
     log_info "Configuring GRUB..."
     set_grub_var "GRUB_TIMEOUT_STYLE" "hidden"
@@ -636,6 +700,48 @@ linux_mint_apply() {
         log_success "fstrim.timer enabled"
     fi
 
+    # Bluetooth service
+    log_info "Configuring Bluetooth..."
+    maybe_sudo systemctl enable bluetooth 2>/dev/null || true
+    maybe_sudo systemctl start bluetooth 2>/dev/null || true
+    log_success "bluetooth.service enabled"
+
+    # WirePlumber LDAC Bluetooth audio config
+    log_info "Configuring WirePlumber Bluetooth audio..."
+    local wp_conf_dir="/etc/wireplumber/wireplumber.conf.d"
+    local wp_conf_file="$wp_conf_dir/51-ldac-hq.conf"
+    local wp_template="$DOTFILES_ROOT/config/linux/wireplumber/51-ldac-hq.conf"
+    maybe_sudo mkdir -p "$wp_conf_dir"
+    if [[ -f "$wp_conf_file" ]] && diff -q "$wp_template" "$wp_conf_file" > /dev/null 2>&1; then
+        log_info "WirePlumber LDAC config already up to date"
+    else
+        maybe_sudo cp "$wp_template" "$wp_conf_file"
+        # Restart PipeWire stack to pick up new config
+        systemctl --user restart pipewire pipewire-pulse wireplumber 2>/dev/null || true
+        log_success "WirePlumber LDAC Bluetooth config deployed"
+    fi
+
+    # Verbose verification output
+    if [[ "${VERBOSE:-false}" == "true" ]]; then
+        echo ""
+        log_step "Verification"
+        log_info "Bluetooth adapter:"
+        bluetoothctl show 2>/dev/null | head -5 || log_warning "No Bluetooth adapter found"
+        echo ""
+        log_info "LDAC libraries:"
+        dpkg -l 2>/dev/null | grep ldac || log_warning "LDAC libraries not found"
+        echo ""
+        log_info "WirePlumber config:"
+        cat "$wp_conf_file" 2>/dev/null || log_warning "WirePlumber config not found"
+        echo ""
+        log_info "Camera devices:"
+        v4l2-ctl --list-devices 2>/dev/null || log_info "No camera detected"
+        echo ""
+        log_info "PipeWire Bluetooth nodes:"
+        pw-cli ls Node 2>/dev/null | grep -i bluez || log_info "No Bluetooth audio devices connected"
+        echo ""
+    fi
+
     log_success "Linux Mint defaults configured"
     log_info "Some settings may require logout/restart to take full effect"
 
@@ -652,11 +758,13 @@ linux_mint_reset() {
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         log_info "[DRY-RUN] Would reset Power, Screensaver, Keyboard, Mouse, Sound, Nemo, Swap settings"
+        log_info "[DRY-RUN] Would reset vm.swappiness to default"
         log_info "[DRY-RUN] Would reset GRUB settings (timeout=10, menu, os-prober enabled)"
         if lsmod | grep -q "^nvidia "; then
             log_info "[DRY-RUN] Would reset NVIDIA suspend settings (GRUB parameters, systemd services)"
         fi
         log_info "[DRY-RUN] Would disable fstrim.timer"
+        log_info "[DRY-RUN] Would remove WirePlumber LDAC config"
         log_success "Linux Mint defaults would be reset"
         return 0
     fi
@@ -698,6 +806,18 @@ linux_mint_reset() {
     fi
     if grep -q '/swapfile' /etc/fstab 2>/dev/null; then
         maybe_sudo sed -i '\|/swapfile|d' /etc/fstab
+    fi
+
+    log_info "Resetting vm.swappiness..."
+    if [[ -f /etc/sysctl.d/99-ctdev-swappiness.conf ]]; then
+        maybe_sudo rm /etc/sysctl.d/99-ctdev-swappiness.conf
+        maybe_sudo sysctl -w vm.swappiness=60 > /dev/null 2>&1 || true
+    fi
+
+    log_info "Removing WirePlumber LDAC config..."
+    if [[ -f /etc/wireplumber/wireplumber.conf.d/51-ldac-hq.conf ]]; then
+        maybe_sudo rm /etc/wireplumber/wireplumber.conf.d/51-ldac-hq.conf
+        systemctl --user restart pipewire pipewire-pulse wireplumber 2>/dev/null || true
     fi
 
     log_info "Resetting GRUB settings..."
