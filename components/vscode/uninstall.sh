@@ -11,7 +11,10 @@ log_info "Uninstalling VS Code..."
 
 PM=$(get_package_manager)
 
-if [[ "$OS" == "macos" ]]; then
+if is_wsl; then
+    log_info "To uninstall VS Code on Windows, use: winget.exe uninstall Microsoft.VisualStudioCode"
+    exit 0
+elif [[ "$OS" == "macos" ]]; then
     run_cmd brew uninstall --cask visual-studio-code || log_warning "Could not uninstall via brew"
 elif [[ "$PM" == "apt" ]]; then
     run_cmd maybe_sudo apt remove -y code || true

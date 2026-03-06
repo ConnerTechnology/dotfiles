@@ -22,6 +22,18 @@ cmd_info() {
         echo "  OS:              $(uname -s)"
     fi
 
+    # WSL
+    if is_wsl; then
+        local wsl_version
+        wsl_version=$(uname -r | grep -oP 'microsoft-standard-WSL\K\d+' 2>/dev/null || echo "unknown")
+        echo "  WSL:             Version $wsl_version"
+        local win_ver
+        win_ver=$(cmd.exe /C "ver" 2>/dev/null | tr -d '\r' | grep -oP '\d+\.\d+\.\d+\.\d+' || true)
+        if [[ -n "$win_ver" ]]; then
+            echo "  Windows:         $win_ver"
+        fi
+    fi
+
     # Architecture
     echo "  Architecture:    $(uname -m)"
 

@@ -11,7 +11,10 @@ log_info "Uninstalling Slack..."
 
 PM=$(get_package_manager)
 
-if [[ "$OS" == "macos" ]]; then
+if is_wsl; then
+    log_info "To uninstall Slack on Windows, use: winget.exe uninstall SlackTechnologies.Slack"
+    exit 0
+elif [[ "$OS" == "macos" ]]; then
     run_cmd brew uninstall --cask slack || log_warning "Could not uninstall via brew"
 elif [[ "$PM" == "apt" ]]; then
     run_cmd maybe_sudo apt remove -y slack-desktop || true

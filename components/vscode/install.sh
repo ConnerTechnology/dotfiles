@@ -12,6 +12,19 @@ log_info "Installing Visual Studio Code"
 OS=$(detect_os)
 PM=$(get_package_manager)
 
+# WSL: Install VS Code on Windows side via winget
+if is_wsl; then
+  if [[ "${FORCE:-false}" != "true" ]] && is_winget_installed "Microsoft.VisualStudioCode"; then
+    log_info "Visual Studio Code is already installed on Windows"
+    exit 0
+  fi
+  install_winget "Microsoft.VisualStudioCode" "Visual Studio Code"
+  log_success "Visual Studio Code installed on Windows via winget"
+  log_info "VS Code's WSL extension will allow editing WSL files seamlessly"
+  create_install_marker vscode
+  exit 0
+fi
+
 # Check if VS Code is already installed
 if [[ "$OS" == "macos" ]]; then
   if [[ "${FORCE:-false}" != "true" ]] && { [[ -d "/Applications/Visual Studio Code.app" ]] || command -v code >/dev/null 2>&1; }; then

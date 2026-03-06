@@ -13,6 +13,18 @@ OS=$(detect_os)
 ARCH=$(detect_arch)
 PM=$(get_package_manager)
 
+# WSL: Install Chrome on Windows side via winget
+if is_wsl; then
+  if [[ "${FORCE:-false}" != "true" ]] && is_winget_installed "Google.Chrome"; then
+    log_info "Google Chrome is already installed on Windows"
+    exit 0
+  fi
+  install_winget "Google.Chrome" "Google Chrome"
+  log_success "Google Chrome installed on Windows via winget"
+  create_install_marker chrome
+  exit 0
+fi
+
 if [[ "$OS" == "macos" ]]; then
   check_installed_app "Google Chrome" && exit 0
 else

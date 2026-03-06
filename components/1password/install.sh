@@ -12,6 +12,18 @@ log_info "Installing 1Password"
 OS=$(detect_os)
 PM=$(get_package_manager)
 
+# WSL: Install 1Password on Windows side via winget
+if is_wsl; then
+  if [[ "${FORCE:-false}" != "true" ]] && is_winget_installed "AgileBits.1Password"; then
+    log_info "1Password is already installed on Windows"
+    exit 0
+  fi
+  install_winget "AgileBits.1Password" "1Password"
+  log_success "1Password installed on Windows via winget"
+  create_install_marker 1password
+  exit 0
+fi
+
 if [[ "$OS" == "macos" ]]; then
   check_installed_app "1Password" && exit 0
 else

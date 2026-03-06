@@ -11,7 +11,10 @@ log_info "Uninstalling 1Password..."
 
 PM=$(get_package_manager)
 
-if [[ "$OS" == "macos" ]]; then
+if is_wsl; then
+    log_info "To uninstall 1Password on Windows, use: winget.exe uninstall AgileBits.1Password"
+    exit 0
+elif [[ "$OS" == "macos" ]]; then
     if [[ -d "/Applications/1Password.app" ]]; then
         run_cmd brew uninstall --cask 1password || log_warning "Could not uninstall via brew"
     fi

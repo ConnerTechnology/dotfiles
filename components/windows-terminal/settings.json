@@ -1,0 +1,50 @@
+{
+    "$help": "https://aka.ms/terminal-documentation",
+    "$schema": "https://aka.ms/terminal-profiles-schema",
+    "defaultProfile": "{2c4de342-38b7-51cf-b940-2309a097f518}",
+    "copyOnSelect": true,
+    "copyFormatting": "none",
+    "trimBlockSelection": true,
+    "profiles": {
+        "defaults": {
+            "font": {
+                "face": "JetBrainsMono Nerd Font",
+                "size": 12
+            },
+            "colorScheme": "One Half Dark",
+            "cursorShape": "bar",
+            "padding": "8",
+            "scrollbarState": "hidden",
+            "antialiasingMode": "cleartype"
+        },
+        "list": [
+            {
+                "guid": "{2c4de342-38b7-51cf-b940-2309a097f518}",
+                "hidden": false,
+                "name": "Ubuntu",
+                "source": "Windows.Terminal.Wsl"
+            },
+            {
+                "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+                "hidden": false,
+                "name": "PowerShell",
+                "source": "Windows.Terminal.PowershellCore"
+            },
+            {
+                "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
+                "hidden": true,
+                "name": "Command Prompt",
+                "commandline": "%SystemRoot%\\System32\\cmd.exe"
+            }
+        ]
+    },
+    "schemes": [],
+    "actions": [
+        { "command": { "action": "copy", "singleLine": false }, "keys": "ctrl+c" },
+        { "command": "paste", "keys": "ctrl+v" },
+        { "command": { "action": "splitPane", "split": "auto", "splitMode": "duplicate" }, "keys": "alt+shift+d" },
+        { "command": "find", "keys": "ctrl+shift+f" },
+        { "command": { "action": "newTab" }, "keys": "ctrl+shift+t" },
+        { "command": "closePane", "keys": "ctrl+shift+w" }
+    ]
+}

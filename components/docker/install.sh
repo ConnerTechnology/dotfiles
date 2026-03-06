@@ -12,6 +12,24 @@ log_info "Installing Docker"
 OS=$(detect_os)
 PM=$(get_package_manager)
 
+# WSL: Install Docker Desktop on Windows side via winget
+if is_wsl; then
+  if [[ "${FORCE:-false}" != "true" ]] && command -v docker >/dev/null 2>&1; then
+    log_info "Docker is already available in WSL: $(docker --version)"
+    exit 0
+  fi
+  if [[ "${FORCE:-false}" != "true" ]] && is_winget_installed "Docker.DockerDesktop"; then
+    log_info "Docker Desktop is already installed on Windows"
+    log_info "Enable WSL integration in Docker Desktop settings to use docker from WSL"
+    exit 0
+  fi
+  install_winget "Docker.DockerDesktop" "Docker Desktop"
+  log_success "Docker Desktop installed on Windows via winget"
+  log_info "Enable WSL integration in Docker Desktop > Settings > Resources > WSL Integration"
+  create_install_marker docker
+  exit 0
+fi
+
 check_installed_cmd "docker" "docker --version" && exit 0
 
 log_info "Docker is not installed. Installing..."

@@ -13,6 +13,18 @@ OS=$(detect_os)
 ARCH=$(detect_arch)
 PM=$(get_package_manager)
 
+# WSL: Install Slack on Windows side via winget
+if is_wsl; then
+  if [[ "${FORCE:-false}" != "true" ]] && is_winget_installed "SlackTechnologies.Slack"; then
+    log_info "Slack is already installed on Windows"
+    exit 0
+  fi
+  install_winget "SlackTechnologies.Slack" "Slack"
+  log_success "Slack installed on Windows via winget"
+  create_install_marker slack
+  exit 0
+fi
+
 if [[ "$OS" == "macos" ]]; then
   check_installed_app "Slack" && exit 0
 else

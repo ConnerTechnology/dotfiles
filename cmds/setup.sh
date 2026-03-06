@@ -24,6 +24,11 @@ Linux Mint steps:
 macOS steps:
     1. System configuration (defaults)
 
+WSL/Windows steps:
+    1. Windows system configuration (bloatware removal, privacy,
+       performance tweaks, update settings)
+    2. Windows Terminal configuration
+
 Options:
     -h, --help           Show this help message
     -n, --dry-run        Preview changes without applying

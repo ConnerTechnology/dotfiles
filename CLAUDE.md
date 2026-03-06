@@ -24,9 +24,9 @@ ctdev cleanup                   # Run all cleanup tasks (with prompts)
 
 ## Components
 
-36 components:
+38 components:
 
-1password, age, bleachbit, btop, bun, chatgpt, chrome, cleanmymac, claude-code, claude-desktop, codex, dbeaver, docker, doctl, earlyoom, fonts, gh, ghostty, git, git-spice, helm, jq, kubectl, linear, logi-options, node, ruby, shellcheck, slack, solaar, sops, tailscale, terraform, tmux, vscode, zsh
+1password, age, bleachbit, btop, bun, chatgpt, chrome, cleanmymac, claude-code, claude-desktop, codex, dbeaver, docker, doctl, earlyoom, fonts, gh, ghostty, git, git-spice, helm, jq, kubectl, linear, logi-options, node, ruby, shellcheck, slack, solaar, sops, tailscale, terraform, tmux, vscode, windows-setup, windows-terminal, zsh
 
 ## Directory structure
 
@@ -42,6 +42,7 @@ components/    Installable components (one dir per component with install.sh and
 - `detect_os`, `detect_arch`, `get_package_manager`, `maybe_sudo`
 - `safe_symlink`, `run_cmd` (respects DRY_RUN)
 - `install_package`, `ensure_git_repo`
+- `is_wsl`, `get_windows_home`, `install_winget`, `has_winget` (WSL/Windows support)
 
 ## Conventions
 

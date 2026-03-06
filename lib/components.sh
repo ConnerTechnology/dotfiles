@@ -45,6 +45,8 @@ declare -a COMPONENTS=(
     "terraform:Terraform infrastructure tool:components/terraform/install.sh"
     "tmux:Terminal multiplexer:components/tmux/install.sh"
     "vscode:Visual Studio Code:components/vscode/install.sh"
+    "windows-setup:Windows bloatware removal, privacy, and performance tweaks:components/windows-setup/install.sh"
+    "windows-terminal:Windows Terminal configuration:components/windows-terminal/install.sh"
     "zsh:Zsh, Oh My Zsh, Pure prompt, plugins:components/zsh/install.sh"
 )
 
@@ -232,6 +234,14 @@ is_component_installed() {
             command -v tmux >/dev/null 2>&1
             ;;
 
+        # WSL only
+        windows-setup)
+            has_install_marker windows-setup
+            ;;
+        windows-terminal)
+            is_wsl && [[ -d "$(get_windows_home)/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe" ]] 2>/dev/null
+            ;;
+
         # Configuration
         fonts)
             if [[ "$(uname -s)" == "Darwin" ]]; then
@@ -317,13 +327,17 @@ is_component_supported() {
         cleanmymac|logi-options)
             [[ "$os" == "Darwin" ]]
             ;;
-        # Linux only
+        # Linux only (not useful in WSL)
         bleachbit|earlyoom|solaar)
-            [[ "$os" == "Linux" ]]
+            [[ "$os" == "Linux" ]] && ! is_wsl
             ;;
-        # macOS only (no Linux desktop app)
+        # macOS only (no Linux/Windows desktop app)
         chatgpt|linear|claude-desktop)
             [[ "$os" == "Darwin" ]]
+            ;;
+        # WSL only
+        windows-setup|windows-terminal)
+            is_wsl
             ;;
         # All other components are cross-platform
         *)
