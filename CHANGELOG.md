@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [8.3.0] - 2026-03-07
+
+### Added
+- xbindkeys mouse button bindings in `ctdev setup` (middle click → Expo via xdotool)
+- Installs `xbindkeys` and `xdotool` packages, symlinks config, creates autostart entry
+- xbindkeys status in `ctdev setup --show`
+- xbindkeys cleanup in `ctdev setup --reset`
+
 ## [8.2.0] - 2026-03-05
 
 ### Removed
