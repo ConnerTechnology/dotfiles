@@ -19,7 +19,8 @@ Runs all setup steps in the correct order for the current OS.
 Linux Mint steps:
     1. GPU driver signing setup (NVIDIA + Secure Boot)
     2. System configuration (GRUB, services, desktop settings,
-       Bluetooth/audio/camera packages, WirePlumber LDAC config)
+       Bluetooth/audio/camera packages, WirePlumber LDAC config,
+       xbindkeys mouse bindings)
 
 macOS steps:
     1. System configuration (defaults)
@@ -485,6 +486,27 @@ linux_mint_show() {
     printf "  %-40s %s\n" "PipeWire libcamera plugin:" "$libcamera_spa"
     echo ""
 
+    echo "xbindkeys:"
+    local xbk_installed="no"
+    command -v xbindkeys &>/dev/null && xbk_installed="yes"
+    printf "  %-40s %s\n" "xbindkeys:" "$xbk_installed"
+    local xdotool_installed="no"
+    command -v xdotool &>/dev/null && xdotool_installed="yes"
+    printf "  %-40s %s\n" "xdotool:" "$xdotool_installed"
+    if [[ -L "$HOME/.xbindkeysrc" ]]; then
+        printf "  %-40s %s\n" "Config symlink:" "yes"
+    elif [[ -f "$HOME/.xbindkeysrc" ]]; then
+        printf "  %-40s %s\n" "Config symlink:" "no (regular file)"
+    else
+        printf "  %-40s %s\n" "Config symlink:" "not present"
+    fi
+    if [[ -f "$HOME/.config/autostart/xbindkeys.desktop" ]]; then
+        printf "  %-40s %s\n" "Autostart entry:" "yes"
+    else
+        printf "  %-40s %s\n" "Autostart entry:" "no"
+    fi
+    echo ""
+
     if lsmod | grep -q "^nvidia "; then
         echo "NVIDIA Suspend:"
         local cmdline
@@ -545,6 +567,7 @@ linux_mint_apply() {
         if lsmod | grep -q "^nvidia "; then
             log_info "[DRY-RUN] Would configure NVIDIA suspend (GRUB parameters, systemd services)"
         fi
+        log_info "[DRY-RUN] Would install and configure xbindkeys (mouse button bindings)"
         log_info "[DRY-RUN] Would enable fstrim.timer for SSD TRIM"
         log_info "[DRY-RUN] Would enable bluetooth.service"
         log_info "[DRY-RUN] Would deploy WirePlumber LDAC Bluetooth config"
@@ -664,6 +687,18 @@ linux_mint_apply() {
         log_success "WirePlumber LDAC Bluetooth config deployed"
     fi
 
+    # xbindkeys (mouse button bindings)
+    log_info "Configuring xbindkeys..."
+    maybe_sudo apt-get install -y -qq xbindkeys xdotool
+    local xbk_config="$DOTFILES_ROOT/config/linux/xbindkeys/.xbindkeysrc"
+    safe_symlink "$xbk_config" "$HOME/.xbindkeysrc"
+    mkdir -p "$HOME/.config/autostart"
+    cp "$DOTFILES_ROOT/config/linux/xbindkeys/xbindkeys.desktop" "$HOME/.config/autostart/xbindkeys.desktop"
+    # Restart xbindkeys to pick up config
+    killall xbindkeys 2>/dev/null || true
+    xbindkeys 2>/dev/null || true
+    log_success "xbindkeys configured"
+
     # Verbose verification output
     if [[ "${VERBOSE:-false}" == "true" ]]; then
         echo ""
@@ -706,6 +741,7 @@ linux_mint_reset() {
             log_info "[DRY-RUN] Would reset NVIDIA suspend settings (GRUB parameters, systemd services)"
         fi
         log_info "[DRY-RUN] Would disable fstrim.timer"
+        log_info "[DRY-RUN] Would reset xbindkeys (stop, remove autostart and config symlink)"
         log_info "[DRY-RUN] Would remove WirePlumber LDAC config"
         log_success "Linux Mint defaults would be reset"
         return 0
@@ -743,6 +779,13 @@ linux_mint_reset() {
     if [[ -f /etc/wireplumber/wireplumber.conf.d/51-ldac-hq.conf ]]; then
         maybe_sudo rm /etc/wireplumber/wireplumber.conf.d/51-ldac-hq.conf
         systemctl --user restart pipewire pipewire-pulse wireplumber 2>/dev/null || true
+    fi
+
+    log_info "Resetting xbindkeys..."
+    killall xbindkeys 2>/dev/null || true
+    rm -f "$HOME/.config/autostart/xbindkeys.desktop"
+    if [[ -L "$HOME/.xbindkeysrc" ]]; then
+        rm -f "$HOME/.xbindkeysrc"
     fi
 
     log_info "Resetting GRUB settings..."
