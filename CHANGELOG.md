@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [8.4.0] - 2026-03-08
+
+### Changed
+- Keyboard repeat rate set to 200ms delay / 50 cps via `xset r rate 200 50` in Linux Mint setup
+- Updated gsettings keyboard delay (200ms) and repeat interval (20ms) to match xset values
+- `ctdev setup --show` displays current xset repeat rate
+- `ctdev setup --reset` resets xset to X11 defaults
+
 ## [8.3.1] - 2026-03-07
 
 ### Changed
