@@ -444,6 +444,9 @@ linux_mint_show() {
     show_gsetting "org.cinnamon.desktop.peripherals.keyboard" "delay" "Repeat delay" ms
     show_gsetting "org.cinnamon.desktop.peripherals.keyboard" "repeat-interval" "Repeat interval" ms
     show_gsetting "org.cinnamon.desktop.peripherals.keyboard" "numlock-state" "Numlock state" bool
+    local xset_rate
+    xset_rate=$(xset q 2>/dev/null | grep -A1 "auto repeat delay" | head -1 | sed 's/.*delay: *\([0-9]*\).*rate: *\([0-9]*\).*/\1ms delay, \2 cps/' || echo "<unavailable>")
+    printf "  %-40s %s\n" "xset repeat rate:" "$xset_rate"
     echo ""
 
     echo "Mouse:"
@@ -606,9 +609,10 @@ linux_mint_apply() {
     # Keyboard Settings
     log_info "Configuring Keyboard..."
     gsettings set org.cinnamon.desktop.peripherals.keyboard repeat true
-    gsettings set org.cinnamon.desktop.peripherals.keyboard delay 500
-    gsettings set org.cinnamon.desktop.peripherals.keyboard repeat-interval 30
+    gsettings set org.cinnamon.desktop.peripherals.keyboard delay 200
+    gsettings set org.cinnamon.desktop.peripherals.keyboard repeat-interval 20
     gsettings set org.cinnamon.desktop.peripherals.keyboard numlock-state true
+    xset r rate 200 50
 
     # Mouse Settings
     log_info "Configuring Mouse..."
@@ -757,6 +761,7 @@ linux_mint_reset() {
     gsettings reset org.cinnamon.desktop.peripherals.keyboard delay
     gsettings reset org.cinnamon.desktop.peripherals.keyboard repeat-interval
     gsettings reset org.cinnamon.desktop.peripherals.keyboard numlock-state
+    xset r rate
 
     log_info "Resetting Mouse settings..."
     dconf reset /org/cinnamon/desktop/peripherals/mouse/accel-profile
