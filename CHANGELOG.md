@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [8.3.1] - 2026-03-07
+
+### Changed
+- GRUB setup defaults to `menu` style with 10s timeout and OS prober enabled
+
 ## [8.3.0] - 2026-03-07
 
 ### Added
