@@ -563,7 +563,7 @@ linux_mint_apply() {
         log_info "[DRY-RUN] Would configure Mouse settings (acceleration, speed, natural scroll)"
         log_info "[DRY-RUN] Would configure Sound settings (disable event sounds)"
         log_info "[DRY-RUN] Would configure Nemo settings (list view)"
-        log_info "[DRY-RUN] Would configure GRUB (timeout=0, hidden, os-prober disabled)"
+        log_info "[DRY-RUN] Would configure GRUB (timeout=10, menu, os-prober enabled)"
         if lsmod | grep -q "^nvidia "; then
             log_info "[DRY-RUN] Would configure NVIDIA suspend (GRUB parameters, systemd services)"
         fi
@@ -626,15 +626,9 @@ linux_mint_apply() {
 
     # GRUB Configuration
     log_info "Configuring GRUB..."
-    set_grub_var "GRUB_TIMEOUT_STYLE" "hidden"
-    set_grub_var "GRUB_TIMEOUT" "0"
-    set_grub_var "GRUB_DISABLE_OS_PROBER" "true"
-
-    # Fix Linux Mint override that re-enables os-prober
-    local mint_grub_cfg="/etc/default/grub.d/50_linuxmint.cfg"
-    if [[ -f "$mint_grub_cfg" ]] && grep -q "GRUB_DISABLE_OS_PROBER=false" "$mint_grub_cfg"; then
-        maybe_sudo sed -i "s/GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=true/" "$mint_grub_cfg"
-    fi
+    set_grub_var "GRUB_TIMEOUT_STYLE" "menu"
+    set_grub_var "GRUB_TIMEOUT" "10"
+    set_grub_var "GRUB_DISABLE_OS_PROBER" "false"
 
     # NVIDIA kernel parameters (only if NVIDIA driver is loaded)
     if lsmod | grep -q "^nvidia "; then
@@ -645,7 +639,7 @@ linux_mint_apply() {
     fi
 
     maybe_sudo update-grub
-    log_info "GRUB timeout 0 = instant Linux boot. Press F11 during POST for BIOS boot menu to select Windows."
+    log_info "GRUB configured with 10s timeout menu and OS prober enabled."
 
     # NVIDIA suspend services (only if NVIDIA driver is loaded)
     if lsmod | grep -q "^nvidia "; then
